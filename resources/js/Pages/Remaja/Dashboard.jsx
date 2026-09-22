@@ -54,7 +54,7 @@ const statusClass = {
     rejected: 'bg-rose-100 text-rose-700',
 };
 
-const CHART_COLORS = ['#6366f1', '#d946ef', '#f59e0b', '#22c55e', '#06b6d4', '#ef4444'];
+const CHART_COLORS = ['#059669', '#0d9488', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444'];
 
 /* =========================================================
  | ANIMATION
@@ -75,10 +75,10 @@ const fadeUp = {
 
 function LinkButton({ href, children, className = '', variant = 'primary' }) {
     const variants = {
-        primary: 'bg-indigo-600 text-white hover:bg-indigo-700',
-        secondary: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
-        outline: 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50',
-        white: 'bg-white text-indigo-700 hover:bg-indigo-50',
+        primary: 'bg-emerald-600 text-white hover:bg-emerald-700',
+        secondary: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+        outline: 'border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50',
+        white: 'bg-white text-emerald-700 hover:bg-emerald-50',
     };
 
     return (
@@ -98,10 +98,10 @@ function LinkButton({ href, children, className = '', variant = 'primary' }) {
 function StatCard({ icon: Icon, label, value, hint, action, index = 0 }) {
     return (
         <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index} className="h-full">
-            <Card className="relative h-full overflow-hidden rounded-2xl border-violet-100/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md hover:shadow-violet-100">
+            <Card className="relative h-full overflow-hidden rounded-2xl border-emerald-100/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-100">
                 <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-indigo-100 to-fuchsia-100 opacity-70"
+                    className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 opacity-70"
                 />
 
                 <CardContent className="relative flex h-full flex-col p-5">
@@ -111,7 +111,7 @@ function StatCard({ icon: Icon, label, value, hint, action, index = 0 }) {
                             <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{value}</p>
                         </div>
 
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 shadow-sm shadow-indigo-200">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm shadow-emerald-200">
                             <Icon className="h-5 w-5 text-white" />
                         </span>
                     </div>
@@ -120,7 +120,7 @@ function StatCard({ icon: Icon, label, value, hint, action, index = 0 }) {
                         {action ? (
                             <Link
                                 href={action.href}
-                                className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
+                                className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
                             >
                                 {action.label}
                                 <ArrowRight className="h-3.5 w-3.5" />
@@ -149,8 +149,8 @@ function LimitBar({ label, spent, limit, type = 'daily' }) {
     const isOver = rawPercentage > 100;
     const isNear = rawPercentage >= 80 && rawPercentage <= 100;
 
-    let trackClass = type === 'monthly' ? 'bg-fuchsia-100' : 'bg-indigo-100';
-    let barClass = type === 'monthly' ? 'bg-fuchsia-600' : 'bg-indigo-600';
+    let trackClass = type === 'monthly' ? 'bg-teal-100' : 'bg-emerald-100';
+    let barClass = type === 'monthly' ? 'bg-teal-600' : 'bg-emerald-600';
 
     if (isNear) barClass = 'bg-amber-500';
     if (isOver) {
@@ -188,7 +188,7 @@ function LimitBar({ label, spent, limit, type = 'daily' }) {
 function TaskCard({ task, index = 0 }) {
     return (
         <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index} className="h-full">
-            <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-violet-100/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md hover:shadow-violet-100">
+            <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-emerald-100/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-100">
                 <CardContent className="flex flex-1 flex-col p-5">
                     <div className="flex items-start gap-3">
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50">
@@ -208,7 +208,7 @@ function TaskCard({ task, index = 0 }) {
                             {rupiah(task.reward_amount)}
                         </span>
 
-                        <Badge variant="outline" className="rounded-full border-indigo-200 text-indigo-700">
+                        <Badge variant="outline" className="rounded-full border-emerald-200 text-emerald-700">
                             Terbuka
                         </Badge>
                     </div>
@@ -226,7 +226,7 @@ function TransactionItem({ transaction }) {
     const isIncome = ['topup', 'allowance'].includes(transaction.type);
 
     return (
-        <div className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-violet-50/40">
+        <div className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-emerald-50/40">
             <div className="flex min-w-0 items-center gap-3">
                 <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
@@ -298,7 +298,7 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, ease: 'easeOut' }}
-                    className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-fuchsia-600 p-6 text-white shadow-lg shadow-indigo-200 sm:p-8"
+                    className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 p-6 text-white shadow-lg shadow-emerald-200 sm:p-8"
                 >
                     <div
                         aria-hidden="true"
@@ -311,7 +311,7 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
 
                     <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                         <div className="min-w-0">
-                            <p className="flex items-center gap-2 text-sm font-medium text-indigo-50">
+                            <p className="flex items-center gap-2 text-sm font-medium text-emerald-50">
                                 <Sparkles className="h-4 w-4" />
                                 Ringkasan hari ini
                             </p>
@@ -320,7 +320,7 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
                                 Halo, {auth?.user?.name?.split(' ')[0] ?? 'Remaja'}
                             </h1>
 
-                            <p className="mt-2 text-sm text-indigo-50 sm:text-base">
+                            <p className="mt-2 text-sm text-emerald-50 sm:text-base">
                                 Saldo saku kamu saat ini{' '}
                                 <span className="font-bold text-white">{rupiah(wallet?.balance)}</span>
                             </p>
@@ -384,10 +384,10 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
 
                 <section className="grid gap-6 xl:grid-cols-2">
                     <motion.div variants={fadeUp} initial="hidden" animate="show" custom={0}>
-                        <Card className="h-full overflow-hidden rounded-2xl border-violet-100/80 bg-white">
+                        <Card className="h-full overflow-hidden rounded-2xl border-emerald-100/80 bg-white">
                             <CardContent className="p-5">
                                 <div className="mb-4 flex items-center gap-2">
-                                    <Wallet className="h-5 w-5 text-indigo-600" />
+                                    <Wallet className="h-5 w-5 text-emerald-600" />
                                     <h2 className="text-base font-bold text-slate-900">Limit Belanja</h2>
                                 </div>
 
@@ -416,10 +416,10 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
                     </motion.div>
 
                     <motion.div variants={fadeUp} initial="hidden" animate="show" custom={1}>
-                        <Card className="h-full overflow-hidden rounded-2xl border-violet-100/80 bg-white">
+                        <Card className="h-full overflow-hidden rounded-2xl border-emerald-100/80 bg-white">
                             <CardContent className="p-5">
                                 <div className="mb-4 flex items-center gap-2">
-                                    <PieChartIcon className="h-5 w-5 text-fuchsia-600" />
+                                    <PieChartIcon className="h-5 w-5 text-teal-600" />
                                     <h2 className="text-base font-bold text-slate-900">
                                         Pengeluaran per Kategori
                                     </h2>
@@ -469,17 +469,17 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
 
                         <Link
                             href={route('remaja.tasks.index')}
-                            className="text-sm font-semibold text-indigo-700 hover:text-indigo-800 hover:underline"
+                            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
                         >
                             Lihat semua misi
                         </Link>
                     </div>
 
                     {upcomingTasks.length === 0 ? (
-                        <Card className="rounded-2xl border-dashed border-violet-200 bg-violet-50/40">
+                        <Card className="rounded-2xl border-dashed border-emerald-200 bg-emerald-50/40">
                             <CardContent className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100">
-                                    <Target className="h-7 w-7 text-indigo-600" />
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100">
+                                    <Target className="h-7 w-7 text-emerald-600" />
                                 </div>
                                 <h3 className="mt-4 font-semibold text-slate-900">Belum ada misi terbuka</h3>
                                 <p className="mt-1 max-w-md text-sm text-slate-500">
@@ -504,7 +504,7 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
                     <div className="mb-4 flex items-end justify-between gap-3">
                         <div>
                             <div className="flex items-center gap-2">
-                                <Activity className="h-5 w-5 text-indigo-600" />
+                                <Activity className="h-5 w-5 text-emerald-600" />
                                 <h2 className="text-lg font-bold text-slate-900">Transaksi Terbaru</h2>
                             </div>
                             <p className="mt-1 text-sm text-slate-500">Riwayat aktivitas saldomu.</p>
@@ -512,14 +512,14 @@ export default function Dashboard({ wallet, taskStats, upcomingTasks = [], recen
 
                         <Link
                             href={route('transactions.index')}
-                            className="shrink-0 text-sm font-semibold text-indigo-700 hover:text-indigo-800 hover:underline"
+                            className="shrink-0 text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
                         >
                             Lihat semua
                         </Link>
                     </div>
 
-                    <Card className="overflow-hidden rounded-2xl border-violet-100/80 bg-white">
-                        <CardContent className="divide-y divide-violet-100/70 p-0">
+                    <Card className="overflow-hidden rounded-2xl border-emerald-100/80 bg-white">
+                        <CardContent className="divide-y divide-emerald-100/70 p-0">
                             {recentTransactions.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
                                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">

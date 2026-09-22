@@ -40,6 +40,19 @@ function useSapaan() {
 }
 
 /**
+ * Text-to-speech sederhana - dipakai untuk kasih feedback suara
+ * setiap kali perintah dikenali ATAU tidak dikenali, biar lansia
+ * gak ngerasa sistemnya "diem aja" pas ngomong sesuatu yang di luar dugaan.
+ */
+function ucapkan(teks) {
+    if (!('speechSynthesis' in window)) return;
+    const ucapan = new SpeechSynthesisUtterance(teks);
+    ucapan.lang = 'id-ID';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(ucapan);
+}
+
+/**
  * Voice command sederhana menggunakan Web Speech API
  */
 function useVoiceCommand(onCommand) {
@@ -52,9 +65,9 @@ function useVoiceCommand(onCommand) {
             window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            setHeard(
-                'Maaf, perangkat ini tidak mendukung perintah suara.'
-            );
+            const pesan = 'Maaf, perangkat ini tidak mendukung perintah suara.';
+            setHeard(pesan);
+            ucapkan(pesan);
             return;
         }
 
@@ -78,11 +91,17 @@ function useVoiceCommand(onCommand) {
             onCommand(text);
         };
 
-        recognition.onerror = () => {
+        recognition.onerror = (event) => {
             setIsListening(false);
-            setHeard(
-                'Tidak terdengar jelas, coba lagi ya.'
-            );
+
+            const pesan = {
+                'no-speech': 'Tidak ada suara terdengar. Coba lagi ya.',
+                'audio-capture': 'Mikrofon tidak ditemukan. Periksa perangkat Anda.',
+                'not-allowed': 'Izin mikrofon ditolak. Aktifkan izin mikrofon di browser.',
+            }[event.error] || 'Tidak terdengar jelas, coba lagi ya.';
+
+            setHeard(pesan);
+            ucapkan(pesan);
         };
 
         recognition.onend = () => {
@@ -111,10 +130,15 @@ export default function Dashboard({
     const saldoRef = useRef(null);
 
     /**
-     * Perintah suara
+     * Perintah suara.
+     * Setiap cabang ngasih feedback suara (ucapkan) biar lansia tau
+     * perintahnya kedengeran dan dimengerti. Kalau gak ada yang cocok,
+     * fallback di paling bawah kasih tau daftar perintah yang dikenali -
+     * jadi sistem gak pernah "diem" walau perintahnya di luar dugaan.
      */
     const handleCommand = (text) => {
         if (text.includes('saldo')) {
+            ucapkan(`Saldo Anda saat ini ${formatRupiah(wallet?.balance)}.`);
             saldoRef.current?.scrollIntoView({
                 behavior: 'smooth',
                 block: 'center',
@@ -123,25 +147,43 @@ export default function Dashboard({
             text.includes('tagihan') ||
             text.includes('bayar')
         ) {
+            ucapkan('Membuka halaman tagihan Anda.');
             router.visit(
                 route('lansia.bills.index')
             );
         } else if (
             text.includes('riwayat') ||
-            text.includes('transaksi')
+            text.includes('transaksi') ||
+            text.includes('mutasi')
         ) {
+            ucapkan('Membuka riwayat transaksi Anda.');
             router.visit(
                 route('transactions.index')
             );
         } else if (
+            text.includes('belanja') ||
+            text.includes('checkout')
+        ) {
+            ucapkan('Membuka halaman belanja suara.');
+            router.visit(route('lansia.voice-checkout'));
+        } else if (
             text.includes('keluarga') ||
             text.includes('telepon') ||
-            text.includes('hubungi')
+            text.includes('hubungi') ||
+            text.includes('anak')
         ) {
             if (lansia?.family_phone) {
+                ucapkan('Menghubungi keluarga Anda.');
                 window.location.href =
                     `tel:${lansia.family_phone}`;
+            } else {
+                ucapkan('Maaf, nomor keluarga belum terdaftar.');
             }
+        } else {
+            // Fallback: perintah tidak dikenali - JANGAN diam, kasih tau + arahkan.
+            ucapkan(
+                'Maaf, saya tidak mengerti. Coba ucapkan: lihat saldo, bayar tagihan, lihat riwayat, atau hubungi keluarga.'
+            );
         }
     };
 
@@ -370,6 +412,10 @@ export default function Dashboard({
                                     "{heard}"
                                 </p>
                             )}
+
+                            <p className="mt-3 text-center text-sm text-slate-400">
+                                Contoh: "lihat saldo", "bayar tagihan", "lihat riwayat", "hubungi keluarga"
+                            </p>
                         </Card>
                     </div>
 

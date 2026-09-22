@@ -16,17 +16,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
+Route::get('/', fn() => Inertia::render('Welcome'))->name('home');
 
 Route::middleware('auth')->group(function () {
 
     // Redirect generik "/dashboard" -> dashboard sesuai role (dipakai default Breeze)
     Route::get('/dashboard', function () {
         return redirect(match (Auth::user()->role) {
-            'admin'     => route('admin.dashboard'),
+            'admin' => route('admin.dashboard'),
             'orang_tua' => route('orang-tua.dashboard'),
-            'lansia'    => route('lansia.dashboard'),
-            'remaja'    => route('remaja.dashboard'),
+            'lansia' => route('lansia.dashboard'),
+            'remaja' => route('remaja.dashboard'),
         });
     })->name('dashboard');
 
@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
 
     // ---------- ADMIN + ORANG TUA (kelola dependent) ----------
     Route::middleware('role:admin,orang_tua')->group(function () {
+        Route::post('/members/{user}/wallet/allocate', [WalletController::class, 'allocate'])
+            ->name('wallet.allocate');
         Route::get('/users/create-dependent', [UserManagementController::class, 'create'])
             ->name('dependents.create');
         Route::post('/users', [UserManagementController::class, 'store'])
@@ -62,6 +64,8 @@ Route::middleware('auth')->group(function () {
 
     // ---------- ORANG TUA ----------
     Route::middleware('role:orang_tua')->prefix('orang-tua')->name('orang-tua.')->group(function () {
+        Route::post('/top-up/verify', [WalletController::class, 'verifyTopUpStatus'])
+            ->name('top-up.verify');
         Route::get('/dashboard', [OrangTuaDashboardController::class, 'index'])->name('dashboard');
         Route::get('/guardian-view', [GuardianViewController::class, 'index'])->name('guardian-view');
         Route::get('/guardian-view/{user}', [GuardianViewController::class, 'show'])->name('guardian-view.show');
@@ -70,6 +74,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up.store');
 
         Route::get('/approval-center', [ApprovalController::class, 'index'])->name('approval-center');
+        Route::get('/approval-center/pending-count', [ApprovalController::class, 'pendingCount'])
+            ->name('approval-center.pending-count');
         Route::put('/approval-center/{approvalRequest}/approve', [ApprovalController::class, 'approve'])
             ->name('approval-center.approve');
         Route::put('/approval-center/{approvalRequest}/reject', [ApprovalController::class, 'reject'])
@@ -98,4 +104,8 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-require __DIR__.'/auth.php';
+// Midtrans Notification Webhook (di luar middleware auth)
+Route::post('/midtrans/notification', [WalletController::class, 'midtransNotification'])
+    ->name('midtrans.notification');
+
+require __DIR__ . '/auth.php';

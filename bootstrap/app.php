@@ -16,12 +16,17 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
         $middleware->alias([
-        'role' => \App\Http\Middleware\EnsureUserHasRole::class,
-    ]);
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+        ]);
 
-        //
+        // Midtrans manggil endpoint ini langsung dari server mereka
+        // (bukan dari form browser user), jadi harus dikecualikan dari
+        // proteksi CSRF - kalau enggak, notifikasi mereka bakal ditolak
+        // dan saldo gak pernah ke-update walau pembayaran sukses.
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/notification',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
-    

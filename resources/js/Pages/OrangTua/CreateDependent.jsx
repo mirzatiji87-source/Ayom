@@ -1,10 +1,13 @@
-import { useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { useForm, usePage, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import OrangTuaLayout from '@/Layouts/OrangTuaLayout';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
+import { DatePicker } from '@/Components/ui/date-picker';
+import CurrencyInput from '@/Components/ui/currency-input';
 import {
   Select,
   SelectContent,
@@ -12,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/Components/ui/select';
+import { CheckCircle2, X } from 'lucide-react';
 
 function Field({ label, error, children, hint }) {
   return (
@@ -24,11 +28,42 @@ function Field({ label, error, children, hint }) {
   );
 }
 
+/** Modal sukses - muncul begitu akun berhasil dibuat, biar gak ada keraguan "udah kebuat belum ya". */
+function SuccessModal({ name, onClose, onCreateAnother }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+        </div>
+
+        <h2 className="mt-4 text-lg font-bold text-[var(--ayom-ink)]">
+          Akun dengan nama "{name}" sudah selesai kamu buat
+        </h2>
+        <p className="mt-1.5 text-sm text-[var(--ayom-muted)]">
+          Akun sudah aktif dan bisa langsung dipakai untuk login.
+        </p>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <Button onClick={onClose} className="bg-[var(--ayom-primary)] hover:bg-[var(--ayom-primary-dark)]">
+            Selesai
+          </Button>
+          <Button variant="outline" onClick={onCreateAnother}>
+            Buat Akun Lain
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CreateDependent({ families = [] }) {
-  const { auth } = usePage().props;
+  const { auth, flash } = usePage().props;
   const isAdmin = auth.user.role === 'admin';
 
-  const { data, setData, post, processing, errors } = useForm({
+  const [successName, setSuccessName] = useState(null);
+
+  const { data, setData, post, processing, errors, reset } = useForm({
     name: '',
     email: '',
     password: '',
@@ -42,13 +77,42 @@ export default function CreateDependent({ families = [] }) {
     approval_threshold: '',
   });
 
+  // Kalau backend ngirim flash.success dan itu untuk pembuatan akun (bukan aksi lain),
+  // tetap dijaga di sini sebagai fallback, tapi jalur utama pakai onSuccess di bawah.
+  useEffect(() => {
+    if (flash?.success && flash?.createdName) {
+      setSuccessName(flash.createdName);
+    }
+  }, [flash]);
+
   function submit(e) {
     e.preventDefault();
-    post(route('dependents.store'), { preserveScroll: true });
+    const submittedName = data.name;
+
+    post(route('dependents.store'), {
+      preserveScroll: true,
+      onSuccess: () => {
+        setSuccessName(submittedName);
+      },
+    });
+  }
+
+  function handleCloseSuccess() {
+    setSuccessName(null);
+    router.visit(route('dashboard'));
+  }
+
+  function handleCreateAnother() {
+    setSuccessName(null);
+    reset();
   }
 
   return (
     <div className="mx-auto max-w-2xl">
+      {successName && (
+        <SuccessModal name={successName} onClose={handleCloseSuccess} onCreateAnother={handleCreateAnother} />
+      )}
+
       <Card className="border-[var(--ayom-border)] shadow-none">
         <CardContent className="p-6">
           <p className="text-sm text-[var(--ayom-muted)]">
@@ -119,12 +183,11 @@ export default function CreateDependent({ families = [] }) {
               </Field>
             )}
 
-            <Field label="Tanggal Lahir" error={errors.date_of_birth} hint="Opsional">
-              <Input
-                type="date"
+            <Field label="Tanggal Lahir" error={errors.date_of_birth} hint="Opsional — pilih dari kalender">
+              <DatePicker
                 value={data.date_of_birth}
-                onChange={(e) => setData('date_of_birth', e.target.value)}
-                className="border-[var(--ayom-border)] sm:w-56"
+                onChange={(val) => setData('date_of_birth', val)}
+                className="sm:w-56"
               />
             </Field>
 
@@ -135,36 +198,30 @@ export default function CreateDependent({ families = [] }) {
               </p>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <Field label="Limit Harian" error={errors.daily_limit}>
-                  <Input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={data.daily_limit}
-                    onChange={(e) => setData('daily_limit', e.target.value)}
+                    onChange={(v) => setData('daily_limit', v)}
                     className="border-[var(--ayom-border)]"
                   />
                 </Field>
                 <Field label="Limit Bulanan" error={errors.monthly_limit}>
-                  <Input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={data.monthly_limit}
-                    onChange={(e) => setData('monthly_limit', e.target.value)}
+                    onChange={(v) => setData('monthly_limit', v)}
                     className="border-[var(--ayom-border)]"
                   />
                 </Field>
                 <Field label="Ambang Approval" error={errors.approval_threshold}>
-                  <Input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={data.approval_threshold}
-                    onChange={(e) => setData('approval_threshold', e.target.value)}
+                    onChange={(v) => setData('approval_threshold', v)}
                     className="border-[var(--ayom-border)]"
                   />
                 </Field>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex justify-end pt-2">
               <Button type="submit" disabled={processing} className="bg-[var(--ayom-primary)] hover:bg-[var(--ayom-primary-dark)]">
                 {processing ? 'Menyimpan…' : 'Buat Akun'}
               </Button>
@@ -176,8 +233,6 @@ export default function CreateDependent({ families = [] }) {
   );
 }
 
-// Layout dipilih dinamis: admin & orang_tua sama-sama memakai halaman ini,
-// tapi shell/nav-nya berbeda sesuai role yang sedang login.
 CreateDependent.layout = (page) => {
   const isAdmin = page.props.auth.user.role === 'admin';
   const Layout = isAdmin ? AdminLayout : OrangTuaLayout;

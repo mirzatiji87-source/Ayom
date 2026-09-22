@@ -24,6 +24,15 @@ class ApprovalController extends Controller
         return Inertia::render('OrangTua/ApprovalCenter', ['requests' => $requests]);
     }
 
+    public function pendingCount()
+    {
+        $count = ApprovalRequest::pending()
+            ->whereHas('requester', fn ($q) => $q->where('family_id', Auth::user()->family_id))
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
     public function approve(ApprovalRequest $approvalRequest): RedirectResponse
     {
         $this->authorizeOverRequest($approvalRequest);
@@ -39,6 +48,14 @@ class ApprovalController extends Controller
             ]);
 
             $transaction->user->wallet->recordSpending((float) $transaction->amount);
+
+            // Kalau transaksi ini asalnya dari pembayaran tagihan (bill_id
+            // terisi), tandai tagihannya lunas juga - sebelumnya ini
+            // kelewat, jadi tagihan yang butuh approval nggak pernah
+            // ke-mark "sudah dibayar" walau udah di-approve.
+            if ($transaction->bill_id && $transaction->bill) {
+                $transaction->bill->markAsPaid();
+            }
 
             ActivityLog::record('approve_transaction', Auth::user(), $transaction);
         });
@@ -66,16 +83,16 @@ class ApprovalController extends Controller
     }
 
     protected function authorizeOverRequest(ApprovalRequest $approvalRequest): void
-{
-    /** @var \App\Models\User $actor */
-    $actor = Auth::user();
+    {
+        /** @var \App\Models\User $actor */
+        $actor = Auth::user();
 
-    $requester = $approvalRequest->requester;
+        $requester = $approvalRequest->requester;
 
-    abort_unless(
-        $actor->isGuardianOf($requester),
-        403,
-        'Anda tidak berhak meninjau permintaan ini.'
-    );
-}
+        abort_unless(
+            $actor->isGuardianOf($requester),
+            403,
+            'Anda tidak berhak meninjau permintaan ini.'
+        );
+    }
 }

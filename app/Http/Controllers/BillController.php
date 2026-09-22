@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBillRequest;
 use App\Models\ActivityLog;
+use App\Models\ApprovalRequest;
 use App\Models\Bill;
 use App\Models\Transaction;
 use App\Models\User;
@@ -39,18 +40,26 @@ class BillController extends Controller
     }
 
     public function myBills(): Response
-{
-    /** @var User $user */
-    $user = Auth::user();
+    {
+        /** @var User $user */
+        $user = Auth::user();
 
-    return Inertia::render('Lansia/BillsReminder', [
-        'bills' => $user->bills()
-            ->where('is_active', true)
-            ->get(),
-    ]);
-}
+        return Inertia::render('Lansia/BillsReminder', [
+            'bills' => $user->bills()
+                ->where('is_active', true)
+                ->get(),
+        ]);
+    }
 
-    /** Bayar manual sekarang juga (dipakai untuk demo tanpa scheduler, atau tombol "bayar sekarang"). */
+    /**
+     * Bayar manual sekarang juga.
+     *
+     * Anti-Scam (Two-Factor Family Approval): kalau nominal tagihan
+     * melebihi approval_threshold wallet lansia, transaksi TIDAK langsung
+     * diproses - malah dibuatkan Transaction + ApprovalRequest berstatus
+     * pending, lalu muncul di Approval Center orang tua. Saldo baru
+     * beneran dipotong setelah orang tua approve (lihat ApprovalController).
+     */
     public function payNow(Bill $bill): RedirectResponse
     {
         abort_unless($bill->user_id === Auth::id(), 403);
@@ -59,6 +68,34 @@ class BillController extends Controller
 
         if (! $wallet->hasSufficientBalance((float) $bill->amount)) {
             return back()->withErrors(['amount' => 'Saldo tidak cukup untuk membayar tagihan ini.']);
+        }
+
+        if ($wallet->requiresApproval((float) $bill->amount)) {
+            DB::transaction(function () use ($bill) {
+                $transaction = Transaction::create([
+                    'user_id' => $bill->user_id,
+                    'family_id' => $bill->user->family_id,
+                    'bill_id' => $bill->id,
+                    'type' => 'bill_payment',
+                    'category' => 'tagihan',
+                    'amount' => $bill->amount,
+                    'description' => $bill->name,
+                    'status' => 'pending',
+                ]);
+
+                ApprovalRequest::create([
+                    'transaction_id' => $transaction->id,
+                    'requested_by' => Auth::id(),
+                    'status' => 'pending',
+                ]);
+
+                ActivityLog::record('request_bill_payment_approval', Auth::user(), $bill);
+            });
+
+            return redirect()->back()->with(
+                'success',
+                'Nominal ini di atas batas normal - menunggu persetujuan orang tua terlebih dahulu.'
+            );
         }
 
         DB::transaction(function () use ($bill, $wallet) {
