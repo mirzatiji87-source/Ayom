@@ -62,6 +62,16 @@ class Task extends Model
 
     // ================= SCOPES =================
 
+    public function scopeInFamily($query, int $familyId)
+    {
+        return $query->where(function ($q) use ($familyId) {
+            $q->where('family_id', $familyId)
+                ->orWhereIn(
+                    'assigned_to',
+                    User::where('family_id', $familyId)->select('id')
+                );
+        });
+    }
     public function scopeOpen($query)
     {
         return $query->where('status', 'open');

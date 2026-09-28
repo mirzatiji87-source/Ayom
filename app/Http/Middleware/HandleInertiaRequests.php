@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Task;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -29,11 +30,27 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
+
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+
+            'flash' => [
+                'success' => fn() => $request->session()->get('success'),
+                'error' => fn() => $request->session()->get('error'),
+            ],
+
+            'pendingTasks' => fn() => $user
+                && $user->role === 'orang_tua'
+                && $user->family_id
+                ? Task::inFamily($user->family_id)
+                    ->submitted()
+                    ->count()
+                : 0,
         ];
     }
 }

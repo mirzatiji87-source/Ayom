@@ -1,59 +1,59 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Ayom
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**Lansia dilindungi, orang tua mengawasi, remaja diedukasi.**
 
-## About Laravel
+Ayom adalah ekosistem finansial keluarga lintas generasi yang menyatukan Lansia, Orang Tua, dan Remaja dalam satu wallet keluarga — dengan pengalaman yang dirancang khusus untuk kebutuhan masing-masing peran.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Latar Belakang
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Lansia rentan jadi korban penipuan finansial dan kesulitan mengoperasikan aplikasi keuangan konvensional. Orang tua butuh cara untuk mengawasi arus kas keluarga tanpa terkesan mengontrol berlebihan. Remaja butuh ruang belajar mengelola uang tanpa risiko finansial nyata. Ayom menjembatani ketiga kebutuhan ini dalam satu platform.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Fitur Utama
 
-## Learning Laravel
+### 👵 Lansia (Senior First)
+- **Voice-First Navigation** — navigasi & transaksi berbasis perintah suara Bahasa Indonesia
+- **Two-Factor Family Approval** — transaksi di atas ambang tertentu wajib disetujui orang tua (anti-scam)
+- **Auto-Pilot Bills & Routine Reminder** — pengingat & pembayaran tagihan rutin (listrik, air, BPJS, obat)
+- **Simple Voice Checkout** — belanja harian cukup dengan suara
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 👨‍👩‍👧 Orang Tua (Guardian & Cashflow Control)
+- **Guardian View** — pantau transparan arus kas lansia & remaja
+- **Top-Up & Limit Setting** — atur batas pengeluaran harian/bulanan, isi saldo keluarga terpusat
+- **Approval Center** — setujui/tolak transaksi mencurigakan dari HP kapan saja
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 🧑‍🎓 Remaja (Smart Pocket & Task-Based Allowance)
+- **Uang Saku Berbasis Misi** — dapat tambahan uang saku dengan menyelesaikan tugas rumah tangga
+- **Pencatatan Otomatis** — grafik pengeluaran per kategori untuk belajar budgeting
 
-## Laravel Sponsors
+## Tech Stack
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- **Backend:** Laravel 11 (Breeze)
+- **Frontend:** React + Inertia.js
+- **UI:** shadcn/ui, Tailwind CSS
+- **Database:** MySQL
+- **Payment Gateway:** Midtrans Snap (sandbox)
 
-### Premium Partners
+## Role & Akses
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Role | Dibuat oleh | Akses |
+|---|---|---|
+| Admin | — | Kelola semua keluarga |
+| Orang Tua | Pendaftaran umum | Guardian View, Approval Center, Top-up, kelola dependent |
+| Lansia | Admin / Orang Tua | Dashboard voice-first, bayar tagihan, riwayat |
+| Remaja | Admin / Orang Tua | Misi, uang saku, grafik pengeluaran |
 
-## Contributing
+## Latar Kompetisi
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Dikembangkan untuk *innovation competition* yang didukung Kemkomdigi & Garuda Spark, oleh tim **Kesayangan Budhe** — SMK Negeri 1 Wonosobo.
 
-## Code of Conduct
+## Instalasi
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm run dev
+php artisan serve
+```

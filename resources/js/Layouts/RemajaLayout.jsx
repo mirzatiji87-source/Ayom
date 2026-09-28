@@ -10,6 +10,9 @@ import {
     Menu,
     X,
 } from "lucide-react";
+import PageTransition from "@/Components/PageTransition";
+import { AyomMark } from "@/Layouts/AdminLayout";
+import { useRoleTheme } from "@/lib/ayom-theme";
 
 const NAV_ITEMS = [
     { label: "Dashboard", routeName: "remaja.dashboard", icon: Home },
@@ -246,6 +249,8 @@ function MobileMenu({ user }) {
 }
 
 export default function RemajaLayout({ children }) {
+    useRoleTheme("remaja");
+
     const page = usePage();
     const user = page?.props?.auth?.user ?? null;
 
@@ -258,9 +263,10 @@ export default function RemajaLayout({ children }) {
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-center gap-3"
                     >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-lg font-bold text-white shadow-md shadow-emerald-200 ring-1 ring-emerald-600/20 lg:h-11 lg:w-11">
-                            A
-                        </div>
+                        <AyomMark
+                            size={44}
+                            className="rounded-2xl shadow-md shadow-emerald-200"
+                        />
                         <span className="text-xl font-extrabold tracking-tight text-slate-900 lg:text-2xl">
                             Ayom
                         </span>

@@ -98,6 +98,55 @@
         --sidebar-ring: oklch(0.547 0.021 43.1);
     }
 
+    /* Warna aksen per peran. Default = Remaja (dipakai juga di halaman tamu/login). */
+    :root {
+        --brand-50: 237 251 241;
+        --brand-100: 217 245 226;
+        --brand-200: 174 235 192;
+        --brand-300: 118 220 149;
+        --brand-400: 58 205 102;
+        --brand-500: 2 191 59;
+        --brand-600: 1 136 42;
+        --brand-700: 1 112 34;
+        --brand-800: 1 87 27;
+        --brand-900: 0 65 20;
+    }
+
+    [data-theme="remaja"] {
+        --primary: #01882a;
+        --primary-foreground: #ffffff;
+    }
+
+    [data-theme="lansia"] {
+        --brand-50: 250 245 237;
+        --brand-100: 245 235 217;
+        --brand-200: 234 211 174;
+        --brand-300: 219 182 118;
+        --brand-400: 204 149 58;
+        --brand-500: 189 119 2;
+        --brand-600: 164 104 2;
+        --brand-700: 134 85 2;
+        --brand-800: 105 67 1;
+        --brand-900: 79 50 1;
+        --primary: #a46802;
+        --primary-foreground: #ffffff;
+    }
+
+    [data-theme="orang-tua"] {
+        --brand-50: 241 244 250;
+        --brand-100: 224 232 245;
+        --brand-200: 189 207 233;
+        --brand-300: 143 174 218;
+        --brand-400: 94 138 201;
+        --brand-500: 48 105 186;
+        --brand-600: 2 72 171;
+        --brand-700: 2 59 140;
+        --brand-800: 1 46 109;
+        --brand-900: 1 35 82;
+        --primary: #0248ab;
+        --primary-foreground: #ffffff;
+    }
+
     .theme {
         --font-sans: "Noto Sans Variable", sans-serif;
         --font-heading: "Playfair Display Variable", serif;

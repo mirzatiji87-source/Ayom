@@ -1,16 +1,18 @@
 // resources/js/Pages/OrangTua/Dashboard.jsx
 
-import { Head, Link, usePage } from '@inertiajs/react';
-import { motion } from 'framer-motion';
+import { Head, Link, usePage } from "@inertiajs/react";
+import { motion } from "framer-motion";
 
-import OrangTuaLayout from '@/Layouts/OrangTuaLayout';
+import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
 
-import { Card, CardContent } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { Progress } from '@/Components/ui/progress';
-import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert';
+import { Card, CardContent } from "@/Components/ui/card";
+import { Badge } from "@/Components/ui/badge";
+import { Progress } from "@/Components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 
-import { initials } from '@/lib/ayom-theme';
+import { formatDate, initials } from "@/lib/ayom-theme";
+
+import CreateTaskDialog from "@/Components/OrangTua/CreateTaskDialog";
 
 import {
     Wallet,
@@ -21,7 +23,7 @@ import {
     ArrowRight,
     ArrowUpRight,
     Sparkles,
-} from 'lucide-react';
+} from "lucide-react";
 
 /*
 |--------------------------------------------------------------------------
@@ -30,30 +32,30 @@ import {
 */
 
 const rupiah = (value) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
+    new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
         maximumFractionDigits: 0,
     }).format(Number(value ?? 0));
 
 const roleLabel = {
-    lansia: 'Lansia',
-    remaja: 'Remaja',
+    lansia: "Lansia",
+    remaja: "Remaja",
 };
 
 const typeLabel = {
-    topup: 'Top-up',
-    expense: 'Pengeluaran',
-    transfer: 'Transfer',
-    bill_payment: 'Bayar Tagihan',
-    allowance: 'Uang Saku',
+    topup: "Top-up",
+    expense: "Pengeluaran",
+    transfer: "Transfer",
+    bill_payment: "Bayar Tagihan",
+    allowance: "Uang Saku",
 };
 
 const statusVariant = {
-    completed: 'default',
-    pending: 'secondary',
-    approved: 'default',
-    rejected: 'destructive',
+    completed: "default",
+    pending: "secondary",
+    approved: "default",
+    rejected: "destructive",
 };
 
 /*
@@ -74,7 +76,7 @@ const fadeUp = {
         transition: {
             delay: index * 0.06,
             duration: 0.4,
-            ease: 'easeOut',
+            ease: "easeOut",
         },
     }),
 };
@@ -105,7 +107,13 @@ function CardCta({ href, children }) {
 
 function StatCard({ icon: Icon, label, value, hint, action, index }) {
     return (
-        <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index} className="h-full">
+        <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            custom={index}
+            className="h-full"
+        >
             <Card className="group relative h-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-100/60">
                 <div
                     aria-hidden="true"
@@ -114,23 +122,28 @@ function StatCard({ icon: Icon, label, value, hint, action, index }) {
 
                 <CardContent className="relative flex h-full flex-col p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 pr-2">
-                            <p className="text-sm font-medium text-slate-500">{label}</p>
-                            <p className="mt-2 break-words text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-2xl">
-                                {value}
-                            </p>
-                        </div>
+                        <p className="min-w-0 pt-1 text-sm font-medium text-slate-500">
+                            {label}
+                        </p>
 
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-200/60">
                             <Icon className="h-5 w-5 text-white" />
                         </div>
                     </div>
 
+                    <p className="mt-3 whitespace-nowrap text-lg font-bold leading-tight tracking-tight tabular-nums text-slate-900 sm:text-xl xl:text-lg 2xl:text-xl">
+                        {value}
+                    </p>
+
                     <div className="mt-auto pt-5">
                         {action ? (
-                            <CardCta href={action.href}>{action.label}</CardCta>
+                            <CardCta href={action.href}>
+                                {action.label}
+                            </CardCta>
                         ) : (
-                            <p className="text-xs leading-relaxed text-slate-500 sm:text-sm">{hint}</p>
+                            <p className="text-xs leading-relaxed text-slate-500 sm:text-sm">
+                                {hint}
+                            </p>
                         )}
                     </div>
                 </CardContent>
@@ -145,7 +158,13 @@ function StatCard({ icon: Icon, label, value, hint, action, index }) {
 |--------------------------------------------------------------------------
 */
 
-function LimitBar({ label, spent, limit, trackClassName = 'bg-emerald-100', barClassName = 'bg-emerald-600' }) {
+function LimitBar({
+    label,
+    spent,
+    limit,
+    trackClassName = "bg-emerald-100",
+    barClassName = "bg-emerald-600",
+}) {
     if (limit === null || limit === undefined || Number(limit) <= 0) {
         return null;
     }
@@ -159,20 +178,38 @@ function LimitBar({ label, spent, limit, trackClassName = 'bg-emerald-100', barC
         <div>
             <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
                 <span className="text-slate-500">{label}</span>
-                <span className={`font-medium tabular-nums ${isOver ? 'text-rose-600' : 'text-slate-700'}`}>
+
+                <span
+                    className={`font-medium tabular-nums ${
+                        isOver ? "text-rose-600" : "text-slate-700"
+                    }`}
+                >
                     {rupiah(spent)}
-                    <span className="text-slate-400"> / {rupiah(limit)}</span>
+                    <span className="text-slate-400">
+                        {" "}
+                        / {rupiah(limit)}
+                    </span>
                 </span>
             </div>
 
             <Progress
                 value={pct}
-                className={`h-2 rounded-full ${isOver ? 'bg-rose-100' : trackClassName} [&>div]:rounded-full ${
-                    isOver ? '[&>div]:bg-rose-500' : isNear ? '[&>div]:bg-amber-500' : `[&>div]:${barClassName}`
+                className={`h-2 rounded-full ${
+                    isOver ? "bg-rose-100" : trackClassName
+                } [&>div]:rounded-full ${
+                    isOver
+                        ? "[&>div]:bg-rose-500"
+                        : isNear
+                          ? "[&>div]:bg-amber-500"
+                          : `[&>div]:${barClassName}`
                 }`}
             />
 
-            {isOver && <p className="mt-1 text-xs font-medium text-rose-600">Melebihi limit</p>}
+            {isOver && (
+                <p className="mt-1 text-xs font-medium text-rose-600">
+                    Melebihi limit
+                </p>
+            )}
         </div>
     );
 }
@@ -187,7 +224,13 @@ function MemberCard({ member, index }) {
     const wallet = member.wallet;
 
     return (
-        <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index} className="h-full">
+        <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            custom={index}
+            className="h-full"
+        >
             <Card className="flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-100/50">
                 <CardContent className="flex flex-1 flex-col p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-4">
@@ -197,16 +240,34 @@ function MemberCard({ member, index }) {
                             </div>
 
                             <div className="min-w-0">
-                                <p className="truncate font-semibold text-slate-900">{member.name}</p>
-                                <Badge variant="outline" className="mt-1.5 rounded-full border-emerald-200 bg-emerald-50 text-emerald-700">
+                                <p className="truncate font-semibold text-slate-900">
+                                    {member.name}
+                                </p>
+
+                                <Badge
+                                    variant="outline"
+                                    className="mt-1.5 rounded-full border-emerald-200 bg-emerald-50 text-emerald-700"
+                                >
                                     {roleLabel[member.role] ?? member.role}
                                 </Badge>
                             </div>
                         </div>
 
-                        <p className="shrink-0 text-right text-lg font-bold tabular-nums text-slate-900">
-                            {rupiah(wallet?.balance)}
-                        </p>
+                        <div className="shrink-0 text-right">
+                            <p className="text-lg font-bold tabular-nums text-slate-900">
+                                {rupiah(wallet?.balance)}
+                            </p>
+
+                            <Link
+                                href={route("orang-tua.top-up.form", {
+                                    recipient_id: member.id,
+                                })}
+                                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 transition hover:text-emerald-700"
+                            >
+                                <Plus className="h-3 w-3" />
+                                Isi saldo
+                            </Link>
+                        </div>
                     </div>
 
                     {wallet ? (
@@ -218,6 +279,7 @@ function MemberCard({ member, index }) {
                                 trackClassName="bg-emerald-100"
                                 barClassName="bg-emerald-600"
                             />
+
                             <LimitBar
                                 label="Limit bulanan"
                                 spent={wallet.monthly_spent}
@@ -227,19 +289,24 @@ function MemberCard({ member, index }) {
                             />
                         </div>
                     ) : (
-                        <p className="mt-5 text-sm text-slate-500">Belum punya wallet.</p>
+                        <p className="mt-5 text-sm text-slate-500">
+                            Belum punya wallet.
+                        </p>
                     )}
 
                     <div className="mt-auto flex gap-2 pt-6">
                         <Link
-                            href={route('orang-tua.guardian-view.show', member.id)}
+                            href={route(
+                                "orang-tua.guardian-view.show",
+                                member.id,
+                            )}
                             className="flex flex-1 items-center justify-center rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98]"
                         >
                             Lihat Detail
                         </Link>
 
                         <Link
-                            href={route('wallet.limit.edit', member.id)}
+                            href={route("wallet.limit.edit", member.id)}
                             className="flex flex-1 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 active:scale-[0.98]"
                         >
                             Atur Limit
@@ -263,30 +330,42 @@ export default function Dashboard() {
     const {
         family,
         members = [],
+        dependents = [],
         pendingApprovals = [],
         pendingApprovalsCount = 0,
         pendingTasksCount = 0,
+        submittedTasks = [],
         recentTransactions = [],
         monthlyExpense = 0,
     } = usePage().props;
 
     return (
-        <OrangTuaLayout title="Dashboard" subtitle="Ringkasan keuangan dan aktivitas keluarga">
+        <OrangTuaLayout
+            title="Dashboard"
+            subtitle="Ringkasan keuangan dan aktivitas keluarga"
+        >
             <Head title="Dashboard" />
 
             <div className="space-y-8">
-                {/* ======================================================
-                    HERO
-                ====================================================== */}
-
+                {/* HERO */}
                 <motion.section
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45, ease: 'easeOut' }}
+                    transition={{
+                        duration: 0.45,
+                        ease: "easeOut",
+                    }}
                     className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 p-6 text-white shadow-xl shadow-emerald-200/50 sm:p-8"
                 >
-                    <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-white/10" />
-                    <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-white/10" />
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-white/10"
+                    />
+
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-white/10"
+                    />
 
                     <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
                         <div>
@@ -296,16 +375,19 @@ export default function Dashboard() {
                             </p>
 
                             <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-                                Halo, {auth?.user?.name?.split(' ')[0] ?? 'Orang Tua'}
+                                Halo,{" "}
+                                {auth?.user?.name?.split(" ")[0] ??
+                                    "Orang Tua"}
                             </h1>
 
                             <p className="mt-2 text-sm text-emerald-50 sm:text-base">
-                                {family?.name ?? 'Keluarga'} · {family?.members_count ?? 0} anggota keluarga
+                                {family?.name ?? "Keluarga"} ·{" "}
+                                {family?.members_count ?? 0} anggota keluarga
                             </p>
                         </div>
 
                         <Link
-                            href={route('orang-tua.top-up.form')}
+                            href={route("orang-tua.top-up.form")}
                             className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50 active:scale-[0.97]"
                         >
                             <ArrowUpRight className="h-4 w-4" />
@@ -314,12 +396,16 @@ export default function Dashboard() {
                     </div>
                 </motion.section>
 
-                {/* ======================================================
-                    APPROVAL ALERT
-                ====================================================== */}
-
+                {/* APPROVAL ALERT */}
                 {pendingApprovalsCount > 0 && (
-                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.35 }}>
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                            delay: 0.1,
+                            duration: 0.35,
+                        }}
+                    >
                         <Alert className="overflow-hidden rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-5 py-5 shadow-sm">
                             <ShieldCheck className="mt-0.5 h-5 w-5 text-amber-600" />
 
@@ -328,13 +414,17 @@ export default function Dashboard() {
                                     <AlertTitle className="text-base font-bold text-amber-900 sm:text-lg">
                                         Ada transaksi menunggu persetujuan
                                     </AlertTitle>
+
                                     <AlertDescription className="mt-1 text-sm text-amber-800">
-                                        {pendingApprovalsCount} transaksi menunggu keputusan Anda.
+                                        {pendingApprovalsCount} transaksi{" "}
+                                        menunggu keputusan Anda.
                                     </AlertDescription>
                                 </div>
 
                                 <Link
-                                    href={route('orang-tua.approval-center')}
+                                    href={route(
+                                        "orang-tua.approval-center",
+                                    )}
                                     className="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.97]"
                                 >
                                     Tinjau Sekarang
@@ -345,14 +435,16 @@ export default function Dashboard() {
                     </motion.div>
                 )}
 
-                {/* ======================================================
-                    RINGKASAN (STAT CARDS)
-                ====================================================== */}
-
+                {/* RINGKASAN (STAT CARDS) */}
                 <section>
                     <div className="mb-5">
-                        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Ringkasan</h2>
-                        <p className="mt-1.5 text-sm text-slate-500 sm:text-base">Kondisi keuangan dan aktivitas keluarga</p>
+                        <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                            Ringkasan
+                        </h2>
+
+                        <p className="mt-1.5 text-sm text-slate-500 sm:text-base">
+                            Kondisi keuangan dan aktivitas keluarga
+                        </p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -361,7 +453,10 @@ export default function Dashboard() {
                             icon={Wallet}
                             label="Saldo Keluarga"
                             value={rupiah(family?.balance)}
-                            action={{ href: route('orang-tua.top-up.form'), label: 'Top-up saldo' }}
+                            action={{
+                                href: route("orang-tua.top-up.form"),
+                                label: "Top-up saldo",
+                            }}
                         />
 
                         <StatCard
@@ -377,7 +472,10 @@ export default function Dashboard() {
                             icon={ShieldCheck}
                             label="Menunggu Persetujuan"
                             value={pendingApprovalsCount}
-                            action={{ href: route('orang-tua.approval-center'), label: 'Buka approval center' }}
+                            action={{
+                                href: route("orang-tua.approval-center"),
+                                label: "Buka approval center",
+                            }}
                         />
 
                         <StatCard
@@ -385,29 +483,40 @@ export default function Dashboard() {
                             icon={ListChecks}
                             label="Misi Menunggu Review"
                             value={pendingTasksCount}
-                            hint="Misi remaja yang sudah disubmit"
+                            action={{
+                                href: route("orang-tua.tasks.index"),
+                                label: "Tinjau misi",
+                            }}
                         />
                     </div>
                 </section>
 
-                {/* ======================================================
-                    ANGGOTA KELUARGA
-                ====================================================== */}
-
+                {/* ANGGOTA KELUARGA */}
                 <section>
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">Anggota Keluarga</h2>
-                            <p className="mt-1 text-sm text-slate-500">Pantau saldo dan batas pengeluaran anggota.</p>
+                            <h2 className="text-xl font-bold text-slate-900">
+                                Anggota Keluarga
+                            </h2>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                                Pantau saldo dan batas pengeluaran anggota.
+                            </p>
                         </div>
 
-                        <Link
-                            href={route('dependents.create')}
-                            className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.97]"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Tambah Akun
-                        </Link>
+                        <div className="flex flex-wrap gap-2">
+                            <CreateTaskDialog
+                                dependents={dependents}
+                            />
+
+                            <Link
+                                href={route("dependents.create")}
+                                className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.97]"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Tambah Akun
+                            </Link>
+                        </div>
                     </div>
 
                     {members.length === 0 ? (
@@ -416,11 +525,15 @@ export default function Dashboard() {
                                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100">
                                     <Plus className="h-7 w-7 text-emerald-600" />
                                 </div>
+
                                 <p className="max-w-md text-sm leading-relaxed text-slate-500">
-                                    Belum ada akun lansia atau remaja. Tambahkan anggota keluarga untuk mulai mengatur wallet dan limit.
+                                    Belum ada akun lansia atau remaja.
+                                    Tambahkan anggota keluarga untuk mulai
+                                    mengatur wallet dan limit.
                                 </p>
+
                                 <Link
-                                    href={route('dependents.create')}
+                                    href={route("dependents.create")}
                                     className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
                                 >
                                     Tambah Akun Sekarang
@@ -430,26 +543,94 @@ export default function Dashboard() {
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {members.map((member, index) => (
-                                <MemberCard key={member.id} member={member} index={index} />
+                                <MemberCard
+                                    key={member.id}
+                                    member={member}
+                                    index={index}
+                                />
                             ))}
                         </div>
                     )}
                 </section>
 
-                {/* ======================================================
-                    AKTIVITAS
-                ====================================================== */}
+                {/* MISI MENUNGGU REVIEW */}
+                {submittedTasks.length > 0 && (
+                    <section>
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    Misi Menunggu Review
+                                </h2>
 
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Misi yang sudah dikirim anak dan menunggu
+                                    keputusanmu.
+                                </p>
+                            </div>
+
+                            <Link
+                                href={route("orang-tua.tasks.index")}
+                                className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                            >
+                                Lihat semua
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        </div>
+
+                        <Card className="overflow-hidden rounded-3xl border-slate-200">
+                            <CardContent className="divide-y divide-slate-100 p-0">
+                                {submittedTasks.map((task) => (
+                                    <Link
+                                        key={task.id}
+                                        href={route(
+                                            "orang-tua.tasks.index",
+                                        )}
+                                        className="flex cursor-pointer items-center justify-between gap-4 p-5 transition duration-200 hover:bg-emerald-50/40"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="truncate font-semibold text-slate-900">
+                                                {task.title}
+                                            </p>
+
+                                            <p className="mt-1 truncate text-sm text-slate-500">
+                                                {task.assignee?.name}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex shrink-0 items-center gap-3">
+                                            <span className="font-bold tabular-nums text-slate-900">
+                                                {rupiah(
+                                                    task.reward_amount,
+                                                )}
+                                            </span>
+
+                                            <ArrowRight className="h-4 w-4 text-slate-400" />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </section>
+                )}
+
+                {/* AKTIVITAS TERBARU & PENDING APPROVALS */}
                 <div className="grid gap-6 xl:grid-cols-2">
                     <section>
                         <div className="mb-4 flex items-center justify-between">
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900">Menunggu Persetujuan</h2>
-                                <p className="mt-1 text-sm text-slate-500">Transaksi yang perlu Anda tinjau.</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    Menunggu Persetujuan
+                                </h2>
+
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Transaksi yang perlu Anda tinjau.
+                                </p>
                             </div>
 
                             <Link
-                                href={route('orang-tua.approval-center')}
+                                href={route(
+                                    "orang-tua.approval-center",
+                                )}
                                 className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
                             >
                                 Lihat semua
@@ -462,21 +643,42 @@ export default function Dashboard() {
                                 {pendingApprovals.length === 0 ? (
                                     <div className="p-8 text-center">
                                         <ShieldCheck className="mx-auto h-8 w-8 text-emerald-500" />
-                                        <p className="mt-3 text-sm text-slate-500">Tidak ada transaksi yang menunggu persetujuan.</p>
+
+                                        <p className="mt-3 text-sm text-slate-500">
+                                            Tidak ada transaksi yang menunggu
+                                            persetujuan.
+                                        </p>
                                     </div>
                                 ) : (
                                     pendingApprovals.map((approval) => (
-                                        <div key={approval.id} className="flex items-center justify-between gap-4 p-5 transition hover:bg-emerald-50/40">
+                                        <div
+                                            key={approval.id}
+                                            className="flex items-center justify-between gap-4 p-5 transition hover:bg-emerald-50/40"
+                                        >
                                             <div className="min-w-0">
-                                                <p className="truncate font-semibold text-slate-900">{approval.requester?.name}</p>
+                                                <p className="truncate font-semibold text-slate-900">
+                                                    {approval.requester?.name}
+                                                </p>
+
                                                 <p className="mt-1 truncate text-sm text-slate-500">
-                                                    {approval.transaction?.description ?? 'Tanpa keterangan'}
+                                                    {approval.transaction
+                                                        ?.description ??
+                                                        "Tanpa keterangan"}
                                                 </p>
                                             </div>
 
                                             <div className="shrink-0 text-right">
-                                                <p className="font-bold tabular-nums text-slate-900">{rupiah(approval.transaction?.amount)}</p>
-                                                <Badge variant="secondary" className="mt-1 rounded-full bg-amber-100 text-amber-800">
+                                                <p className="font-bold tabular-nums text-slate-900">
+                                                    {rupiah(
+                                                        approval.transaction
+                                                            ?.amount,
+                                                    )}
+                                                </p>
+
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="mt-1 rounded-full bg-amber-100 text-amber-800"
+                                                >
                                                     Pending
                                                 </Badge>
                                             </div>
@@ -490,12 +692,17 @@ export default function Dashboard() {
                     <section>
                         <div className="mb-4 flex items-center justify-between">
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900">Aktivitas Terbaru</h2>
-                                <p className="mt-1 text-sm text-slate-500">Transaksi terakhir keluarga.</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    Aktivitas Terbaru
+                                </h2>
+
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Transaksi terakhir keluarga.
+                                </p>
                             </div>
 
                             <Link
-                                href={route('orang-tua.guardian-view')}
+                                href={route("orang-tua.guardian-view")}
                                 className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
                             >
                                 Guardian View
@@ -508,23 +715,47 @@ export default function Dashboard() {
                                 {recentTransactions.length === 0 ? (
                                     <div className="p-8 text-center">
                                         <Wallet className="mx-auto h-8 w-8 text-slate-300" />
-                                        <p className="mt-3 text-sm text-slate-500">Belum ada transaksi.</p>
+
+                                        <p className="mt-3 text-sm text-slate-500">
+                                            Belum ada aktivitas transaksi.
+                                        </p>
                                     </div>
                                 ) : (
-                                    recentTransactions.map((trx) => (
-                                        <div key={trx.id} className="flex items-center justify-between gap-4 p-5 transition hover:bg-emerald-50/40">
+                                    recentTransactions.map((tx) => (
+                                        <div
+                                            key={tx.id}
+                                            className="flex items-center justify-between gap-4 p-5 transition hover:bg-slate-50/50"
+                                        >
                                             <div className="min-w-0">
                                                 <p className="truncate font-semibold text-slate-900">
-                                                    {trx.user?.name}
-                                                    <span className="ml-2 font-normal text-slate-400">{typeLabel[trx.type] ?? trx.type}</span>
+                                                    {tx.user?.name ??
+                                                        tx.description}
                                                 </p>
-                                                <p className="mt-1 truncate text-sm text-slate-500">{trx.description ?? '-'}</p>
+
+                                                <p className="mt-0.5 truncate text-xs text-slate-500">
+                                                    {typeLabel[tx.type] ??
+                                                        tx.type}{" "}
+                                                    ·{" "}
+                                                    {formatDate(
+                                                        tx.created_at,
+                                                    )}
+                                                </p>
                                             </div>
 
                                             <div className="shrink-0 text-right">
-                                                <p className="font-bold tabular-nums text-slate-900">{rupiah(trx.amount)}</p>
-                                                <Badge variant={statusVariant[trx.status] ?? 'outline'} className="mt-1 rounded-full">
-                                                    {trx.status}
+                                                <p className="font-bold tabular-nums text-slate-900">
+                                                    {rupiah(tx.amount)}
+                                                </p>
+
+                                                <Badge
+                                                    variant={
+                                                        statusVariant[
+                                                            tx.status
+                                                        ] ?? "secondary"
+                                                    }
+                                                    className="mt-1 rounded-full text-xs"
+                                                >
+                                                    {tx.status}
                                                 </Badge>
                                             </div>
                                         </div>

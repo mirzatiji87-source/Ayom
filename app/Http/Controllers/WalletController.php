@@ -31,39 +31,62 @@ class WalletController extends Controller
         MidtransConfig::$is3ds = config('midtrans.is_3ds');
     }
 
-    public function topUpForm(): Response
-    {
-        /** @var User $user */
-        $user = Auth::user();
+   public function topUpForm(Request $request): Response
+{
+    $user = Auth::user();
+    $family = $user->family()->withCount('members')->first();
 
-        $family = $user->family()
-            ->withCount('members')
+    $recipient = null;
+    if ($request->filled('recipient_id')) {
+        $recipient = User::where('id', $request->recipient_id)
+            ->where('family_id', $family->id)
+            ->whereIn('role', ['lansia', 'remaja'])
+            ->with('wallet')
             ->first();
-
-        return Inertia::render('OrangTua/TopUpLimit', [
-            'family' => $family,
-            'midtransClientKey' => config('midtrans.client_key'),
-            'midtransIsProduction' => config('midtrans.is_production'),
-        ]);
     }
+
+    return Inertia::render('OrangTua/TopUpLimit', [
+        'family' => $family,
+        'recipient' => $recipient ? [
+            'id' => $recipient->id,
+            'name' => $recipient->name,
+            'wallet_balance' => $recipient->wallet?->balance ?? 0,
+        ] : null,
+        'midtransClientKey' => config('midtrans.client_key'),
+        'midtransIsProduction' => config('midtrans.is_production'),
+    ]);
+}
 
     public function topUp(TopUpRequest $request): JsonResponse
     {
         $actor = $request->user();
         $family = $actor->family;
 
+
+        $recipient = null;
+        if ($request->filled('recipient_id')) {
+            $recipient = User::where('id', $request->recipient_id)
+                ->where('family_id', $family->id)
+                ->whereIn('role', ['lansia', 'remaja'])
+                ->firstOrFail();
+        }
+
         $orderId = 'TOPUP-' . $family->id . '-' . now()->format('YmdHis') . '-' . Str::random(6);
 
         $transaction = Transaction::create([
             'midtrans_order_id' => $orderId,
-            'user_id' => $actor->id,
+            'user_id' => $recipient?->id ?? $actor->id,
             'family_id' => $family->id,
             'type' => 'topup',
             'category' => 'lainnya',
             'amount' => $request->amount,
-            'description' => 'Top-up saldo keluarga',
+            'description' => $recipient
+                ? 'Top-up langsung ke ' . $recipient->name
+                : 'Top-up saldo keluarga',
             'status' => 'pending',
         ]);
+
+        // ... sisanya (Snap::getSnapToken dst) TETAP SAMA, gak perlu diubah
 
         try {
             $snapToken = Snap::getSnapToken([
@@ -75,12 +98,14 @@ class WalletController extends Controller
                     'first_name' => $actor->name,
                     'email' => $actor->email,
                 ],
-                'item_details' => [[
-                    'id' => 'topup-saldo',
-                    'price' => (int) $request->amount,
-                    'quantity' => 1,
-                    'name' => 'Top-up Saldo Keluarga Ayom',
-                ]],
+                'item_details' => [
+                    [
+                        'id' => 'topup-saldo',
+                        'price' => (int) $request->amount,
+                        'quantity' => 1,
+                        'name' => 'Top-up Saldo Keluarga Ayom',
+                    ]
+                ],
             ]);
         } catch (\Exception $e) {
             Log::error('Midtrans Snap token gagal dibuat', ['error' => $e->getMessage()]);
@@ -111,13 +136,13 @@ class WalletController extends Controller
         $grossAmount = $payload['gross_amount'] ?? null;
         $signatureKey = $payload['signature_key'] ?? null;
 
-        if (! $orderId || ! $statusCode || ! $grossAmount || ! $signatureKey) {
+        if (!$orderId || !$statusCode || !$grossAmount || !$signatureKey) {
             return response()->json(['message' => 'Payload tidak lengkap.'], 400);
         }
 
         $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . config('midtrans.server_key'));
 
-        if (! hash_equals($expectedSignature, $signatureKey)) {
+        if (!hash_equals($expectedSignature, $signatureKey)) {
             Log::warning('Midtrans notification signature tidak valid', ['order_id' => $orderId]);
 
             return response()->json(['message' => 'Invalid signature.'], 403);
@@ -125,7 +150,7 @@ class WalletController extends Controller
 
         $transaction = Transaction::where('midtrans_order_id', $orderId)->first();
 
-        if (! $transaction) {
+        if (!$transaction) {
             return response()->json(['message' => 'Transaksi tidak ditemukan.'], 404);
         }
 
@@ -154,7 +179,7 @@ class WalletController extends Controller
             ->where('family_id', Auth::user()->family_id)
             ->first();
 
-        if (! $transaction) {
+        if (!$transaction) {
             return response()->json(['message' => 'Transaksi tidak ditemukan.'], 404);
         }
 
@@ -184,33 +209,40 @@ class WalletController extends Controller
      * biar gak dobel kode dan konsisten aturannya di satu tempat.
      */
     protected function applyMidtransStatus(Transaction $transaction, ?string $transactionStatus, ?string $fraudStatus): void
-    {
-        // Idempotent - kalau udah pernah diproses, jangan diulang.
-        if ($transaction->status !== 'pending') {
-            return;
-        }
+{
+    if ($transaction->status !== 'pending') {
+        return;
+    }
 
-        $isSuccess = in_array($transactionStatus, ['capture', 'settlement'])
-            && ($fraudStatus === null || $fraudStatus === 'accept');
+    $isSuccess = in_array($transactionStatus, ['capture', 'settlement'])
+        && ($fraudStatus === null || $fraudStatus === 'accept');
 
-        $isFailed = in_array($transactionStatus, ['deny', 'cancel', 'expire']);
+    $isFailed = in_array($transactionStatus, ['deny', 'cancel', 'expire']);
 
-        if ($isSuccess) {
-            DB::transaction(function () use ($transaction) {
+    if ($isSuccess) {
+        DB::transaction(function () use ($transaction) {
+            $recipient = $transaction->user;
+
+            // Kalau si "pemilik" transaksi ini lansia/remaja -> masuk wallet pribadinya.
+            // Kalau orang_tua -> masuk pool keluarga (perilaku lama, tetap jalan).
+            if ($recipient && in_array($recipient->role, ['lansia', 'remaja'])) {
+                $recipient->wallet()->increment('balance', (float) $transaction->amount);
+            } else {
                 $family = Family::find($transaction->family_id);
                 $family->topUp((float) $transaction->amount);
+            }
 
-                $transaction->update(['status' => 'completed']);
+            $transaction->update(['status' => 'completed']);
 
-                ActivityLog::record('top_up', $transaction->user, $family, [
-                    'amount' => $transaction->amount,
-                    'midtrans_order_id' => $transaction->midtrans_order_id,
-                ]);
-            });
-        } elseif ($isFailed) {
-            $transaction->update(['status' => 'rejected']);
-        }
+            ActivityLog::record('top_up', $transaction->user, $transaction->family, [
+                'amount' => $transaction->amount,
+                'midtrans_order_id' => $transaction->midtrans_order_id,
+            ]);
+        });
+    } elseif ($isFailed) {
+        $transaction->update(['status' => 'rejected']);
     }
+}
 
     public function edit(User $user): Response
     {
@@ -227,7 +259,9 @@ class WalletController extends Controller
         $wallet->update($request->only(['daily_limit', 'monthly_limit', 'approval_threshold']));
 
         ActivityLog::record('set_limit', $request->user(), $user, $request->only([
-            'daily_limit', 'monthly_limit', 'approval_threshold',
+            'daily_limit',
+            'monthly_limit',
+            'approval_threshold',
         ]));
 
         return redirect()->back()->with('success', 'Limit berhasil diperbarui.');
@@ -248,7 +282,7 @@ class WalletController extends Controller
         $family = $user->family;
         $amount = (float) $request->amount;
 
-        if (! $family->hasSufficientBalance($amount)) {
+        if (!$family->hasSufficientBalance($amount)) {
             return back()->withErrors(['amount' => 'Saldo keluarga tidak cukup.']);
         }
 

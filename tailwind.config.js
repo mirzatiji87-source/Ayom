@@ -1,4 +1,16 @@
+const steps = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+
+// shift = 1 → teal jadi satu tingkat lebih gelap dari emerald (gradient tetap ada kedalaman)
+const brand = (shift = 0) =>
+    Object.fromEntries(
+        steps.map((step, i) => [
+            step,
+            `rgb(var(--brand-${steps[Math.min(i + shift, steps.length - 1)]}) / <alpha-value>)`,
+        ]),
+    );
+
 /** @type {import('tailwindcss').Config} */
+
 export default {
     darkMode: "class",
 
@@ -66,6 +78,10 @@ export default {
                     border: "var(--sidebar-border)",
                     ring: "var(--sidebar-ring)",
                 },
+
+                // INI DIPINDAHKAN KE LEVEL YANG BENAR
+                emerald: brand(0),
+                teal: brand(1),
             },
 
             fontFamily: {
@@ -81,7 +97,5 @@ export default {
         },
     },
 
-    plugins: [
-        require("@tailwindcss/forms"),
-    ],
+    plugins: [require("@tailwindcss/forms")],
 };

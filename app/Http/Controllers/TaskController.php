@@ -39,6 +39,24 @@ class TaskController extends Controller
                 ->get(),
         ]);
     }
+    public function familyIndex(): Response
+    {
+        /** @var User $actor */
+        $actor = Auth::user();
+
+        return Inertia::render('OrangTua/Tasks', [
+            'tasks' => Task::inFamily($actor->family_id)
+                ->with('assignee:id,name')
+                ->latest()
+                ->get(),
+
+            'dependents' => User::where('family_id', $actor->family_id)
+                ->where('role', 'remaja')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+        ]);
+    }
 
     public function submit(Task $task): RedirectResponse
     {

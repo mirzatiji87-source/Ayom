@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/top-up', [WalletController::class, 'topUpForm'])->name('top-up.form');
         Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up.store');
+        Route::get('/misi', [TaskController::class, 'familyIndex'])->name('tasks.index');
 
         Route::get('/approval-center', [ApprovalController::class, 'index'])->name('approval-center');
         Route::get('/approval-center/pending-count', [ApprovalController::class, 'pendingCount'])

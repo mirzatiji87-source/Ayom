@@ -1,6 +1,6 @@
-import BottomNav from '@/Components/OrangTua/BottomNav';
-import RouteLoadingBar from '@/Components/RouteLoadingBar';
-import PageTransition from '@/Components/PageTransition';
+import BottomNav from "@/Components/OrangTua/BottomNav";
+import RouteLoadingBar from "@/Components/RouteLoadingBar";
+import PageTransition from "@/Components/PageTransition";
 import { useEffect, useState } from "react";
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { motion } from "framer-motion";
@@ -16,7 +16,7 @@ import {
     DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/Components/ui/avatar";
-import { themeVars, initials } from "@/lib/ayom-theme";
+import { themeVars, initials, useRoleTheme } from "@/lib/ayom-theme";
 import { AyomMark } from "@/Layouts/AdminLayout";
 import RolePill from "@/Components/Admin/RolePill";
 import {
@@ -29,6 +29,7 @@ import {
     ChevronDown,
     LogOut,
     Settings,
+    ListChecks,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -44,6 +45,12 @@ const NAV_ITEMS = [
         icon: ShieldCheck,
         notifKey: "approval",
     },
+    {
+        label: "Misi",
+        routeName: "orang-tua.tasks.index",
+        icon: ListChecks,
+        notifKey: "tasks",
+    },
     { label: "Top-up Saldo", routeName: "orang-tua.top-up.form", icon: Wallet },
     {
         label: "Buat Akun Dependent",
@@ -52,7 +59,6 @@ const NAV_ITEMS = [
     },
 ];
 
-// Polling interval buat cek notifikasi baru (ms). 15 detik cukup ringan buat prototype.
 const NOTIF_POLL_INTERVAL = 15000;
 
 function isActiveRoute(name) {
@@ -63,10 +69,6 @@ function isActiveRoute(name) {
     }
 }
 
-/**
- * Hook kecil buat polling jumlah approval pending.
- * Berhenti otomatis kalau komponen unmount, dan gak nge-block render awal.
- */
 function usePendingApprovalCount() {
     const [count, setCount] = useState(0);
 
@@ -80,7 +82,7 @@ function usePendingApprovalCount() {
                 );
                 if (active) setCount(data.count ?? 0);
             } catch {
-                // Diamkan saja kalau gagal (misal lagi logout/network blip) - jangan ganggu UI.
+                // Diamkan saja jika ada galat koneksi
             }
         }
 
@@ -108,13 +110,17 @@ function NavBadge({ count }) {
 
 function SidebarBody({ onNavigate }) {
     const pendingApprovalCount = usePendingApprovalCount();
+    const { pendingTasks = 0 } = usePage().props;
+
+    const badgeCounts = {
+        approval: pendingApprovalCount,
+        tasks: pendingTasks,
+    };
 
     return (
         <div className="flex h-full flex-col py-5">
             <div className="flex items-center gap-2.5 px-4 pb-6">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-200/60 ring-1 ring-emerald-600/10">
-                    <AyomMark size={20} className="text-white" />
-                </div>
+                <AyomMark size={40} />
                 <div className="leading-tight">
                     <p className="text-[15px] font-semibold text-[var(--ayom-ink)]">
                         Ayom
@@ -129,7 +135,9 @@ function SidebarBody({ onNavigate }) {
                 {NAV_ITEMS.map((item) => {
                     const Icon = item.icon;
                     const active = isActiveRoute(item.routeName);
-                    const showBadge = item.notifKey === "approval";
+                    const badgeCount = item.notifKey
+                        ? badgeCounts[item.notifKey]
+                        : 0;
 
                     return (
                         <Link
@@ -165,9 +173,7 @@ function SidebarBody({ onNavigate }) {
                             >
                                 {item.label}
                             </span>
-                            {showBadge && (
-                                <NavBadge count={pendingApprovalCount} />
-                            )}
+                            {badgeCount > 0 && <NavBadge count={badgeCount} />}
                         </Link>
                     );
                 })}
@@ -193,7 +199,6 @@ function ProfileMenu() {
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
-            {/* Langkah 1: klik profil untuk membuka menu */}
             <DropdownMenuTrigger
                 className={`flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 transition-colors ${
                     open ? "bg-emerald-50" : "hover:bg-black/[0.04]"
@@ -216,7 +221,6 @@ function ProfileMenu() {
                 />
             </DropdownMenuTrigger>
 
-            {/* Langkah 2: baru di sini muncul tombol Keluar, setelah profil diklik */}
             <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel className="flex items-center gap-3 py-2 font-normal">
                     <Avatar className="h-9 w-9">
@@ -253,7 +257,16 @@ function ProfileMenu() {
 }
 
 export default function OrangTuaLayout({ children, title, subtitle }) {
-    
+    useRoleTheme("orang-tua");
+
+    useEffect(() => {
+        // Reset residual body lock yang ditinggalkan Midtrans Snap setelah popup ditutup
+        document.body.style.overflow = "";
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        window.scrollTo(0, 0);
+    }, []);
 
     return (
         <div
@@ -263,7 +276,6 @@ export default function OrangTuaLayout({ children, title, subtitle }) {
             <RouteLoadingBar />
             <Head title={title ?? "Orang Tua"} />
 
-            {/* Aksen gradasi lembut di latar, senada dengan tampilan Lansia */}
             <div
                 aria-hidden="true"
                 className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-72 overflow-hidden"
@@ -277,11 +289,9 @@ export default function OrangTuaLayout({ children, title, subtitle }) {
                     <SidebarBody />
                 </aside>
 
-                
                 <div className="flex min-h-screen flex-1 flex-col">
-                    <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-[var(--ayom-border)] bg-[var(--ayom-surface)]/90 px-5 py-3.5 backdrop-blur">
+                    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-[var(--ayom-border)] bg-[var(--ayom-surface)] px-5 py-3.5 shadow-sm">
                         <div className="flex items-center gap-3">
-                            
                             <div>
                                 <h1 className="text-[17px] font-semibold leading-tight text-[var(--ayom-ink)]">
                                     {title}
