@@ -37,7 +37,7 @@ export default function SetLimit({ member }) {
   return (
     <div className="mx-auto max-w-xl">
       {(flash?.success || recentlySuccessful) && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           {flash?.success ?? 'Limit berhasil diperbarui.'}
         </div>
@@ -91,7 +91,7 @@ export default function SetLimit({ member }) {
             </Field>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={processing} className="bg-[var(--ayom-primary)] hover:bg-[var(--ayom-primary-dark)]">
+              <Button type="submit" disabled={processing} className="bg-emerald-600 text-white hover:bg-emerald-700">
                 {processing ? 'Menyimpan…' : 'Simpan Limit'}
               </Button>
             </div>

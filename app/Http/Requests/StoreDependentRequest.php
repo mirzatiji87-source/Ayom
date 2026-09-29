@@ -18,7 +18,7 @@ class StoreDependentRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', Rule::in(['lansia', 'remaja'])],
+            'role' => ['required', Rule::in(['orang_tua', 'lansia', 'remaja'])],
             'phone' => ['nullable', 'string', 'max:20'],
             'date_of_birth' => ['nullable', 'date'],
             // hanya admin yang boleh (dan wajib) memilih family_id manual

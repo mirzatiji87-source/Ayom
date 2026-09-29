@@ -19,12 +19,6 @@ import {
     ArrowUpRight,
 } from 'lucide-react';
 
-/*
-|--------------------------------------------------------------------------
-| Helpers (konsisten dengan OrangTua/Dashboard.jsx)
-|--------------------------------------------------------------------------
-*/
-
 const rupiah = (value) =>
     new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -62,12 +56,16 @@ const fadeUp = {
 };
 
 /*
-|--------------------------------------------------------------------------
-| Limit Bar (disalin dari Dashboard.jsx biar konsisten)
-|--------------------------------------------------------------------------
+| LimitBar: class bar ditulis LENGKAP (bukan disambung string) supaya
+| Tailwind bisa mendeteksinya. Harian = warna utama, bulanan = slate.
 */
-
-function LimitBar({ label, spent, limit, trackClassName = 'bg-emerald-100', barClassName = 'bg-emerald-600' }) {
+function LimitBar({
+    label,
+    spent,
+    limit,
+    trackClassName = 'bg-emerald-100',
+    barClassName = '[&>div]:bg-emerald-600',
+}) {
     if (limit === null || limit === undefined || Number(limit) <= 0) {
         return null;
     }
@@ -89,8 +87,12 @@ function LimitBar({ label, spent, limit, trackClassName = 'bg-emerald-100', barC
 
             <Progress
                 value={pct}
-                className={`h-2 rounded-full ${isOver ? 'bg-rose-100' : trackClassName} [&>div]:rounded-full ${
-                    isOver ? '[&>div]:bg-rose-500' : isNear ? '[&>div]:bg-amber-500' : `[&>div]:${barClassName}`
+                className={`h-2 rounded-full [&>div]:rounded-full ${
+                    isOver
+                        ? 'bg-rose-100 [&>div]:bg-rose-500'
+                        : isNear
+                          ? `${trackClassName} [&>div]:bg-amber-500`
+                          : `${trackClassName} ${barClassName}`
                 }`}
             />
 
@@ -99,27 +101,21 @@ function LimitBar({ label, spent, limit, trackClassName = 'bg-emerald-100', barC
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Member Row
-|--------------------------------------------------------------------------
-*/
-
 function MemberRow({ member, index }) {
     const wallet = member.wallet;
 
     return (
         <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index}>
-            <Card className="rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+            <Card className="rounded-3xl border border-slate-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md">
                 <CardContent className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                     <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white shadow-sm shadow-emerald-200">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-bold text-slate-700">
                             {initials(member.name)}
                         </div>
 
                         <div className="min-w-0">
                             <p className="truncate font-semibold text-slate-900">{member.name}</p>
-                            <Badge variant="outline" className="mt-1.5 rounded-full border-emerald-200 bg-emerald-50 text-emerald-700">
+                            <Badge variant="outline" className="mt-1.5 rounded-full border-slate-200 bg-slate-50 text-slate-600">
                                 {roleLabel[member.role] ?? member.role}
                             </Badge>
                         </div>
@@ -131,8 +127,8 @@ function MemberRow({ member, index }) {
                             label="Limit bulanan"
                             spent={wallet?.monthly_spent}
                             limit={wallet?.monthly_limit}
-                            trackClassName="bg-teal-100"
-                            barClassName="bg-teal-600"
+                            trackClassName="bg-slate-100"
+                            barClassName="[&>div]:bg-slate-500"
                         />
                     </div>
 
@@ -153,12 +149,6 @@ function MemberRow({ member, index }) {
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Page
-|--------------------------------------------------------------------------
-*/
-
 export default function GuardianView() {
     const { members = [], transactions, flash } = usePage().props;
 
@@ -172,12 +162,11 @@ export default function GuardianView() {
 
             <div className="space-y-8">
                 {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                    <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
                         {flash.success}
                     </div>
                 )}
 
-                {/* ANGGOTA */}
                 <section>
                     <div className="mb-4">
                         <h2 className="text-xl font-bold text-slate-900">Anggota Keluarga</h2>
@@ -185,9 +174,9 @@ export default function GuardianView() {
                     </div>
 
                     {members.length === 0 ? (
-                        <Card className="rounded-3xl border-dashed border-emerald-200 bg-emerald-50/40">
+                        <Card className="rounded-3xl border-dashed border-slate-300 bg-slate-50/60">
                             <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-                                <Wallet className="h-8 w-8 text-emerald-500" />
+                                <Wallet className="h-8 w-8 text-slate-300" />
                                 <p className="text-sm text-slate-500">Belum ada anggota lansia/remaja untuk dipantau.</p>
                             </CardContent>
                         </Card>
@@ -200,7 +189,6 @@ export default function GuardianView() {
                     )}
                 </section>
 
-                {/* TRANSAKSI */}
                 <section>
                     <div className="mb-4">
                         <h2 className="text-xl font-bold text-slate-900">Riwayat Transaksi</h2>
@@ -216,7 +204,7 @@ export default function GuardianView() {
                                 </div>
                             ) : (
                                 rows.map((trx) => (
-                                    <div key={trx.id} className="flex items-center justify-between gap-4 p-5 transition hover:bg-emerald-50/40">
+                                    <div key={trx.id} className="flex items-center justify-between gap-4 p-5 transition hover:bg-slate-50">
                                         <div className="min-w-0">
                                             <p className="truncate font-semibold text-slate-900">
                                                 {trx.user?.name}

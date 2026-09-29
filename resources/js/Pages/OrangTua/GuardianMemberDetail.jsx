@@ -40,7 +40,14 @@ const statusVariant = {
     rejected: 'destructive',
 };
 
-function LimitBar({ label, spent, limit, trackClassName = 'bg-emerald-100', barClassName = 'bg-emerald-600' }) {
+/* Class bar ditulis lengkap biar terdeteksi Tailwind */
+function LimitBar({
+    label,
+    spent,
+    limit,
+    trackClassName = 'bg-emerald-100',
+    barClassName = '[&>div]:bg-emerald-600',
+}) {
     if (limit === null || limit === undefined || Number(limit) <= 0) {
         return <p className="text-sm text-slate-400">{label}: belum diatur.</p>;
     }
@@ -62,8 +69,12 @@ function LimitBar({ label, spent, limit, trackClassName = 'bg-emerald-100', barC
 
             <Progress
                 value={pct}
-                className={`h-2.5 rounded-full ${isOver ? 'bg-rose-100' : trackClassName} [&>div]:rounded-full ${
-                    isOver ? '[&>div]:bg-rose-500' : isNear ? '[&>div]:bg-amber-500' : `[&>div]:${barClassName}`
+                className={`h-2.5 rounded-full [&>div]:rounded-full ${
+                    isOver
+                        ? 'bg-rose-100 [&>div]:bg-rose-500'
+                        : isNear
+                          ? `${trackClassName} [&>div]:bg-amber-500`
+                          : `${trackClassName} ${barClassName}`
                 }`}
             />
 
@@ -93,7 +104,7 @@ export default function GuardianMemberDetail() {
                     Kembali ke Guardian View
                 </Link>
 
-                {/* PROFIL + SALDO */}
+                {/* PROFIL + SALDO (satu-satunya blok warna penuh di halaman ini) */}
                 <motion.section
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -122,12 +133,11 @@ export default function GuardianMemberDetail() {
                     </div>
                 </motion.section>
 
-                {/* LIMIT + ACTION */}
                 <section className="grid gap-4 sm:grid-cols-2">
                     <Card className="rounded-3xl border-slate-200 shadow-sm">
                         <CardContent className="p-6">
                             <div className="mb-4 flex items-center gap-2">
-                                <Wallet className="h-5 w-5 text-emerald-600" />
+                                <Wallet className="h-5 w-5 text-slate-500" />
                                 <h2 className="text-base font-bold text-slate-900">Limit Wallet</h2>
                             </div>
 
@@ -137,8 +147,8 @@ export default function GuardianMemberDetail() {
                                     label="Limit bulanan"
                                     spent={wallet?.monthly_spent}
                                     limit={wallet?.monthly_limit}
-                                    trackClassName="bg-teal-100"
-                                    barClassName="bg-teal-600"
+                                    trackClassName="bg-slate-100"
+                                    barClassName="[&>div]:bg-slate-500"
                                 />
                             </div>
                         </CardContent>
@@ -147,7 +157,7 @@ export default function GuardianMemberDetail() {
                     <Card className="flex flex-col justify-between rounded-3xl border-slate-200 shadow-sm">
                         <CardContent className="p-6">
                             <div className="mb-4 flex items-center gap-2">
-                                <Settings className="h-5 w-5 text-emerald-600" />
+                                <Settings className="h-5 w-5 text-slate-500" />
                                 <h2 className="text-base font-bold text-slate-900">Pengaturan</h2>
                             </div>
 
@@ -169,7 +179,6 @@ export default function GuardianMemberDetail() {
                     </Card>
                 </section>
 
-                {/* TRANSAKSI */}
                 <section>
                     <div className="mb-4">
                         <h2 className="text-xl font-bold text-slate-900">Riwayat Transaksi</h2>
@@ -185,7 +194,7 @@ export default function GuardianMemberDetail() {
                                 </div>
                             ) : (
                                 rows.map((trx) => (
-                                    <div key={trx.id} className="flex items-center justify-between gap-4 p-5 transition hover:bg-emerald-50/40">
+                                    <div key={trx.id} className="flex items-center justify-between gap-4 p-5 transition hover:bg-slate-50">
                                         <div className="min-w-0">
                                             <p className="truncate font-semibold text-slate-900">
                                                 {typeLabel[trx.type] ?? trx.type}

@@ -2,18 +2,18 @@ import { useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 
 import RemajaLayout from "@/Layouts/RemajaLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Badge } from "@/Components/ui/badge";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/Components/ui/select";
 import {
     Dialog,
     DialogContent,
@@ -21,7 +21,7 @@ import {
     DialogTitle,
     DialogTrigger,
     DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/Components/ui/dialog";
 import { Plus } from "lucide-react";
 
 // NOTE: halaman ini dipakai bersama oleh role `lansia` & `remaja` (route `transactions.index`).

@@ -97,5 +97,18 @@ export default {
         },
     },
 
-    plugins: [require("@tailwindcss/forms")],
+    plugins: [
+        require("@tailwindcss/forms"),
+        require("tailwindcss/plugin")(({ addVariant }) => {
+            // Atribut yang dipasang Base UI pada popup/overlay
+            addVariant("data-open", "&[data-open]");
+            addVariant("data-closed", "&[data-closed]");
+            addVariant("data-starting-style", "&[data-starting-style]");
+            addVariant("data-ending-style", "&[data-ending-style]");
+            addVariant(
+                "supports-backdrop-filter",
+                "@supports (backdrop-filter: blur(0))",
+            );
+        }),
+    ],
 };

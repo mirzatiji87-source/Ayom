@@ -73,7 +73,16 @@ export function useRoleTheme(theme) {
 
         el.dataset.theme = theme;
 
+        // Pasang --ayom-* di <html> juga, supaya popup portal ikut kebagian
+        Object.entries(themeVars).forEach(([key, value]) =>
+            el.style.setProperty(key, value),
+        );
+
         return () => {
+            Object.keys(themeVars).forEach((key) =>
+                el.style.removeProperty(key),
+            );
+
             if (prev) {
                 el.dataset.theme = prev;
             } else {

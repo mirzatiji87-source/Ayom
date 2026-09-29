@@ -34,12 +34,6 @@ const fadeUp = {
     }),
 };
 
-/*
-|--------------------------------------------------------------------------
-| Request Card
-|--------------------------------------------------------------------------
-*/
-
 function RequestCard({ request, index }) {
     const [reason, setReason] = useState('');
     const [showReasonBox, setShowReasonBox] = useState(false);
@@ -68,17 +62,18 @@ function RequestCard({ request, index }) {
 
     return (
         <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index}>
+            {/* Amber tetap dipakai: penanda "menunggu keputusan" */}
             <Card className="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
                 <CardContent className="p-5 sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-bold text-slate-700">
                                 {initials(requester?.name)}
                             </div>
 
                             <div className="min-w-0">
                                 <p className="truncate font-semibold text-slate-900">{requester?.name}</p>
-                                <Badge variant="outline" className="mt-1.5 rounded-full border-amber-200 bg-amber-50 text-amber-700">
+                                <Badge variant="outline" className="mt-1.5 rounded-full border-slate-200 bg-slate-50 text-slate-600">
                                     {roleLabel[requester?.role] ?? requester?.role}
                                 </Badge>
                                 <p className="mt-2 text-sm text-slate-500">{trx?.description ?? 'Tanpa keterangan'}</p>
@@ -94,7 +89,7 @@ function RequestCard({ request, index }) {
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="Alasan menolak (opsional)"
                             rows={2}
-                            className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-emerald-400 focus:outline-none"
+                            className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                         />
                     )}
 
@@ -121,12 +116,6 @@ function RequestCard({ request, index }) {
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Page
-|--------------------------------------------------------------------------
-*/
-
 export default function ApprovalCenter() {
     const { requests = [], flash } = usePage().props;
 
@@ -136,15 +125,15 @@ export default function ApprovalCenter() {
 
             <div className="space-y-6">
                 {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                    <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
                         {flash.success}
                     </div>
                 )}
 
                 {requests.length === 0 ? (
-                    <Card className="rounded-3xl border-dashed border-emerald-200 bg-emerald-50/40">
+                    <Card className="rounded-3xl border-dashed border-slate-300 bg-slate-50/60">
                         <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
-                            <ShieldCheck className="h-10 w-10 text-emerald-500" />
+                            <ShieldCheck className="h-10 w-10 text-slate-300" />
                             <p className="text-sm text-slate-500">Tidak ada transaksi yang menunggu persetujuan saat ini.</p>
                         </CardContent>
                     </Card>

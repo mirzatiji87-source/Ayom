@@ -133,10 +133,10 @@ class User extends Authenticatable
 
     /** Apakah $this adalah guardian (orang tua) dari $member dalam family yang sama */
     public function isGuardianOf(User $member): bool
-    {
-        return $this->isOrangTua()
-            && $this->family_id !== null
-            && $this->family_id === $member->family_id
-            && in_array($member->role, ['lansia', 'remaja']);
-    }
+{
+    return $this->isOrangTua()
+        && $this->family_id !== null
+        && $this->family_id === $member->family_id
+        && in_array($member->role, ['lansia', 'remaja', 'orang_tua']);
+}
 }

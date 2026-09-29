@@ -1,3 +1,5 @@
+// resources/js/Components/OrangTua/CreateTaskDialog.jsx
+
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 import {
@@ -21,14 +23,38 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/Components/ui/select";
-import { Plus, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Plus, ListChecks, AlertCircle, Loader2 } from "lucide-react";
+
+function FieldLabel({ htmlFor, required = false, children }) {
+    return (
+        <Label
+            htmlFor={htmlFor}
+            className="text-sm font-medium text-slate-700"
+        >
+            {children}
+            {required && <span className="ml-0.5 text-rose-500">*</span>}
+        </Label>
+    );
+}
+
+function FieldError({ message }) {
+    if (!message) return null;
+
+    return (
+        <p className="flex items-center gap-1 text-xs text-rose-600">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            {message}
+        </p>
+    );
+}
 
 export default function CreateTaskDialog({ dependents = [], trigger }) {
     const [open, setOpen] = useState(false);
+    const hasDependents = dependents.length > 0;
 
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
-            assigned_to: dependents.length > 0 ? String(dependents[0].id) : "",
+            assigned_to: hasDependents ? String(dependents[0].id) : "",
             title: "",
             description: "",
             reward_amount: "",
@@ -57,41 +83,43 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 {trigger ?? (
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+                    <Button className="w-full bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 sm:w-auto">
                         <Plus className="mr-1.5 h-4 w-4" />
                         Buat Misi Baru
                     </Button>
                 )}
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[480px]">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[var(--ayom-ink)]">
-                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            {/*
+              Override lokal (tidak mengubah dialog.jsx global):
+              - max-h + overflow-y-auto  -> form tidak kepotong di layar pendek/HP
+              - rounded-2xl              -> sesuai gaya kartu di halaman Orang Tua
+              - title normal-case font-sans -> judul tidak KAPITAL serif
+            */}
+            <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto rounded-2xl p-5 sm:max-w-[480px] sm:p-6">
+                <DialogHeader className="pr-10">
+                    <DialogTitle className="flex items-center gap-2 font-sans text-lg font-bold normal-case tracking-normal text-slate-900">
+                        <ListChecks className="h-5 w-5 shrink-0 text-emerald-600" />
                         Buat Misi Baru
                     </DialogTitle>
-                    <DialogDescription className="text-xs text-[var(--ayom-muted)]">
-                        Berikan tugas atau misi harian untuk anak beserta
-                        imbalan saldonya.
+                    <DialogDescription className="text-sm text-slate-500">
+                        Beri tugas untuk anak beserta imbalan saldonya.
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Pilih Anak */}
                     <div className="space-y-1.5">
-                        <Label
-                            htmlFor="assigned_to"
-                            className="text-xs font-semibold"
-                        >
-                            Tugaskan Kepada{" "}
-                            <span className="text-rose-500">*</span>
-                        </Label>
+                        <FieldLabel htmlFor="assigned_to" required>
+                            Tugaskan kepada
+                        </FieldLabel>
                         <Select
                             value={data.assigned_to}
                             onValueChange={(val) => setData("assigned_to", val)}
+                            disabled={!hasDependents}
                         >
                             <SelectTrigger id="assigned_to" className="w-full">
-                                <SelectValue placeholder="Pilih Anak">
+                                <SelectValue placeholder="Pilih anak">
                                     {
                                         dependents.find(
                                             (d) =>
@@ -112,46 +140,35 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
                                 ))}
                             </SelectContent>
                         </Select>
-                        {errors.assigned_to && (
-                            <p className="flex items-center gap-1 text-xs text-rose-500">
-                                <AlertCircle className="h-3 w-3" />
-                                {errors.assigned_to}
+                        {!hasDependents && (
+                            <p className="text-xs text-slate-500">
+                                Belum ada anak terdaftar. Buat akun dependent
+                                dulu lewat menu Buat Akun Dependent.
                             </p>
                         )}
+                        <FieldError message={errors.assigned_to} />
                     </div>
 
-                    {/* Judul Misi */}
+                    {/* Judul */}
                     <div className="space-y-1.5">
-                        <Label
-                            htmlFor="title"
-                            className="text-xs font-semibold"
-                        >
-                            Judul Misi <span className="text-rose-500">*</span>
-                        </Label>
+                        <FieldLabel htmlFor="title" required>
+                            Judul misi
+                        </FieldLabel>
                         <Input
                             id="title"
-                            placeholder="Contoh: Membersihkan Kamar, Belajar Math"
+                            placeholder="Contoh: Membersihkan kamar"
                             value={data.title}
                             onChange={(e) => setData("title", e.target.value)}
                         />
-                        {errors.title && (
-                            <p className="flex items-center gap-1 text-xs text-rose-500">
-                                <AlertCircle className="h-3 w-3" />
-                                {errors.title}
-                            </p>
-                        )}
+                        <FieldError message={errors.title} />
                     </div>
 
-                    {/* Imbalan / Reward & Tenggat */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Reward & Tenggat */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-1.5">
-                            <Label
-                                htmlFor="reward_amount"
-                                className="text-xs font-semibold"
-                            >
-                                Reward (Rp){" "}
-                                <span className="text-rose-500">*</span>
-                            </Label>
+                            <FieldLabel htmlFor="reward_amount" required>
+                                Reward (Rp)
+                            </FieldLabel>
                             <CurrencyInput
                                 id="reward_amount"
                                 value={data.reward_amount}
@@ -160,21 +177,13 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
                                 }
                                 placeholder="10.000"
                             />
-                            {errors.reward_amount && (
-                                <p className="flex items-center gap-1 text-xs text-rose-500">
-                                    <AlertCircle className="h-3 w-3" />
-                                    {errors.reward_amount}
-                                </p>
-                            )}
+                            <FieldError message={errors.reward_amount} />
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label
-                                htmlFor="due_date"
-                                className="text-xs font-semibold"
-                            >
-                                Tenggat Waktu (Opsional)
-                            </Label>
+                            <FieldLabel htmlFor="due_date">
+                                Tenggat (opsional)
+                            </FieldLabel>
                             <Input
                                 id="due_date"
                                 type="date"
@@ -183,53 +192,41 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
                                     setData("due_date", e.target.value)
                                 }
                             />
-                            {errors.due_date && (
-                                <p className="flex items-center gap-1 text-xs text-rose-500">
-                                    <AlertCircle className="h-3 w-3" />
-                                    {errors.due_date}
-                                </p>
-                            )}
+                            <FieldError message={errors.due_date} />
                         </div>
                     </div>
 
                     {/* Deskripsi */}
                     <div className="space-y-1.5">
-                        <Label
-                            htmlFor="description"
-                            className="text-xs font-semibold"
-                        >
-                            Deskripsi Misi (Opsional)
-                        </Label>
+                        <FieldLabel htmlFor="description">
+                            Deskripsi (opsional)
+                        </FieldLabel>
                         <Textarea
                             id="description"
                             rows={3}
-                            placeholder="Jelaskan instruksi detail tugas jika ada..."
+                            placeholder="Jelaskan detail tugas jika perlu"
                             value={data.description}
                             onChange={(e) =>
                                 setData("description", e.target.value)
                             }
                         />
-                        {errors.description && (
-                            <p className="flex items-center gap-1 text-xs text-rose-500">
-                                <AlertCircle className="h-3 w-3" />
-                                {errors.description}
-                            </p>
-                        )}
+                        <FieldError message={errors.description} />
                     </div>
 
-                    <DialogFooter className="pt-2">
+                    <DialogFooter className="pt-1">
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setOpen(false)}
+                            onClick={() => handleOpenChange(false)}
                             disabled={processing}
+                            className="w-full sm:w-auto"
                         >
                             Batal
                         </Button>
                         <Button
                             type="submit"
-                            disabled={processing}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            disabled={processing || !hasDependents}
+                            className="w-full bg-emerald-600 text-white hover:bg-emerald-700 sm:w-auto"
                         >
                             {processing ? (
                                 <>
@@ -237,7 +234,7 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
                                     Menyimpan...
                                 </>
                             ) : (
-                                "Simpan Misi"
+                                "Simpan misi"
                             )}
                         </Button>
                     </DialogFooter>

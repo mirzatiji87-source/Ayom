@@ -47,8 +47,6 @@ export default function TopUpLimit() {
                 return;
             }
 
-            // Masih pending di sisi Midtrans - coba lagi beberapa kali (kadang butuh
-            // beberapa detik walau popup sudah bilang sukses).
             if (attempt < 5) {
                 setTimeout(() => verifyAndRefresh(orderId, attempt + 1), 1500);
             } else {
@@ -119,13 +117,13 @@ export default function TopUpLimit() {
 
             <div className="mx-auto max-w-xl space-y-6">
                 {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                    <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
                         {flash.success}
                     </div>
                 )}
 
                 {statusMsg && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
                         {statusMsg}
                     </div>
                 )}
@@ -204,7 +202,7 @@ export default function TopUpLimit() {
                                         key={amt}
                                         type="button"
                                         onClick={() => setAmount(String(amt))}
-                                        className="rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                        className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
                                     >
                                         {rupiah(amt)}
                                     </button>

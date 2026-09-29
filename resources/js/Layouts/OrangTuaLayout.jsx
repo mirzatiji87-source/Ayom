@@ -158,7 +158,7 @@ function SidebarBody({ onNavigate }) {
                                 />
                             )}
                             <Icon
-                                className={`relative z-10 h-4.5 w-4.5 shrink-0 ${
+                                className={`relative z-10 h-[18px] w-[18px] shrink-0 ${
                                     active
                                         ? "text-white"
                                         : "text-[var(--ayom-muted)]"

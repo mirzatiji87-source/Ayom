@@ -1,3 +1,5 @@
+// resources/js/Pages/OrangTua/Tasks.jsx
+
 import { useMemo, useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import {
@@ -19,11 +21,12 @@ import {
     initials,
 } from '@/lib/ayom-theme';
 
+/* Status = warna semantik (bukan warna tema): berjalan=slate, review=amber, selesai=green, ditolak=rose */
 const STATUS_META = {
     open: {
         label: 'Berjalan',
         icon: Target,
-        className: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+        className: 'bg-slate-100 text-slate-700 ring-slate-200',
     },
     submitted: {
         label: 'Perlu direview',
@@ -157,7 +160,7 @@ export default function Tasks({ tasks = [], dependents = [] }) {
 
             <div className="mx-auto max-w-4xl space-y-6">
                 {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                    <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
                         {flash.success}
                     </div>
                 )}
@@ -181,7 +184,7 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                     className={`inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ${
                                         active
                                             ? 'bg-emerald-600 text-white shadow-sm'
-                                            : 'border border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700'
+                                            : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
                                     }`}
                                 >
                                     {item.label}
@@ -208,11 +211,11 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                         {visible.map((task) => (
                             <article
                                 key={task.id}
-                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md"
+                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md"
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="flex min-w-0 items-center gap-3">
-                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white">
+                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold text-slate-700">
                                             {initials(task.assignee?.name)}
                                         </span>
 
@@ -278,9 +281,7 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                     id={`reason-${task.id}`}
                                                     value={reason}
                                                     onChange={(e) =>
-                                                        setReason(
-                                                            e.target.value,
-                                                        )
+                                                        setReason(e.target.value)
                                                     }
                                                     placeholder="Contoh: Kamar belum rapi"
                                                     className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
@@ -289,27 +290,20 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                 <div className="flex flex-wrap gap-2">
                                                     <button
                                                         type="button"
-                                                        disabled={
-                                                            busyId === task.id
-                                                        }
-                                                        onClick={() =>
-                                                            reject(task)
-                                                        }
+                                                        disabled={busyId === task.id}
+                                                        onClick={() => reject(task)}
                                                         className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition duration-200 hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         {busyId === task.id && (
                                                             <Loader2 className="h-4 w-4 animate-spin" />
                                                         )}
-
                                                         Kirim penolakan
                                                     </button>
 
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            setRejectingId(
-                                                                null,
-                                                            );
+                                                            setRejectingId(null);
                                                             setReason('');
                                                         }}
                                                         className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition duration-200 hover:bg-slate-50"
@@ -322,12 +316,8 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     type="button"
-                                                    disabled={
-                                                        busyId === task.id
-                                                    }
-                                                    onClick={() =>
-                                                        approve(task)
-                                                    }
+                                                    disabled={busyId === task.id}
+                                                    onClick={() => approve(task)}
                                                     className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                                                 >
                                                     {busyId === task.id ? (
@@ -335,15 +325,12 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                     ) : (
                                                         <CheckCircle2 className="h-4 w-4" />
                                                     )}
-
                                                     Setujui
                                                 </button>
 
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        setRejectingId(task.id)
-                                                    }
+                                                    onClick={() => setRejectingId(task.id)}
                                                     className="cursor-pointer rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 transition duration-200 hover:bg-rose-50"
                                                 >
                                                     Tolak
