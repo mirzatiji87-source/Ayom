@@ -27,10 +27,7 @@ import { Plus, ListChecks, AlertCircle, Loader2 } from "lucide-react";
 
 function FieldLabel({ htmlFor, required = false, children }) {
     return (
-        <Label
-            htmlFor={htmlFor}
-            className="text-sm font-medium text-slate-700"
-        >
+        <Label htmlFor={htmlFor} className="text-sm font-medium text-slate-700">
             {children}
             {required && <span className="ml-0.5 text-rose-500">*</span>}
         </Label>
@@ -81,14 +78,18 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-                {trigger ?? (
-                    <Button className="w-full bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 sm:w-auto">
-                        <Plus className="mr-1.5 h-4 w-4" />
-                        Buat Misi Baru
-                    </Button>
-                )}
-            </DialogTrigger>
+            {trigger ? (
+                <DialogTrigger render={trigger} />
+            ) : (
+                <DialogTrigger
+                    render={
+                        <Button className="w-full bg-[var(--ayom-primary)] text-white shadow-sm hover:bg-[var(--ayom-primary-dark)] sm:w-auto" />
+                    }
+                >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Buat Misi Baru
+                </DialogTrigger>
+            )}
 
             {/*
               Override lokal (tidak mengubah dialog.jsx global):
@@ -226,7 +227,7 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
                         <Button
                             type="submit"
                             disabled={processing || !hasDependents}
-                            className="w-full bg-emerald-600 text-white hover:bg-emerald-700 sm:w-auto"
+                            className="w-full bg-[var(--ayom-primary)] text-white hover:bg-[var(--ayom-primary-dark)] sm:w-auto"
                         >
                             {processing ? (
                                 <>

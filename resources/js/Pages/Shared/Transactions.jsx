@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
 
 import RemajaLayout from "@/Layouts/RemajaLayout";
+import LansiaLayout from "@/Layouts/LansiaLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
@@ -25,9 +26,10 @@ import {
 import { Plus } from "lucide-react";
 
 // NOTE: halaman ini dipakai bersama oleh role `lansia` & `remaja` (route `transactions.index`).
-// Layout dibiarkan RemajaLayout untuk sekarang — kalau lansia butuh tampilan sendiri
-// (font besar, kontras tinggi), ganti jadi pemilihan layout berdasarkan `auth.user.role`
-// dari props Inertia bersama (`usePage().props.auth.user.role`).
+// Layout dipilih dinamis lewat Transactions.layout di bawah, berdasarkan auth.user.role.
+// Ukuran teks & tombol JUGA menyesuaikan role (lihat prop `isLansia` yang dioper ke
+// setiap sub-komponen) supaya untuk Lansia tampil besar & kontras tinggi, konsisten
+// dengan gaya di BillsReminder.jsx — bukan cuma layout-nya yang beda, isinya juga.
 
 function formatRupiah(value) {
     return new Intl.NumberFormat("id-ID", {
@@ -82,24 +84,32 @@ const STATUS_META = {
     rejected: { label: "Ditolak", className: "bg-red-100 text-red-700" },
 };
 
-function TypeBadge({ type }) {
+function TypeBadge({ type, isLansia }) {
     const meta = TYPE_META[type] ?? {
         label: type,
         sign: "",
         className: "bg-slate-100 text-slate-600",
     };
-    return <Badge className={meta.className}>{meta.label}</Badge>;
+    return (
+        <Badge className={`${meta.className} ${isLansia ? "px-3 py-1 text-base" : ""}`}>
+            {meta.label}
+        </Badge>
+    );
 }
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, isLansia }) {
     const meta = STATUS_META[status] ?? {
         label: status,
         className: "bg-slate-100 text-slate-600",
     };
-    return <Badge className={meta.className}>{meta.label}</Badge>;
+    return (
+        <Badge className={`${meta.className} ${isLansia ? "px-3 py-1 text-base" : ""}`}>
+            {meta.label}
+        </Badge>
+    );
 }
 
-function NewExpenseDialog() {
+function NewExpenseDialog({ isLansia }) {
     const [open, setOpen] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         amount: "",
@@ -120,20 +130,24 @@ function NewExpenseDialog() {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-                       <DialogTrigger asChild>
-                <Button>
-                    <Plus className="mr-1 h-4 w-4" />
+            <DialogTrigger asChild>
+                <Button className={isLansia ? "h-14 px-6 text-xl" : ""}>
+                    <Plus className={isLansia ? "mr-2 h-6 w-6" : "mr-1 h-4 w-4"} />
                     Catat Pengeluaran
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className={isLansia ? "sm:max-w-lg" : ""}>
                 <DialogHeader>
-                    <DialogTitle>Catat Pengeluaran Baru</DialogTitle>
+                    <DialogTitle className={isLansia ? "text-2xl" : ""}>
+                        Catat Pengeluaran Baru
+                    </DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
-                        <Label htmlFor="amount">Jumlah (Rp)</Label>
+                        <Label htmlFor="amount" className={isLansia ? "text-lg" : ""}>
+                            Jumlah (Rp)
+                        </Label>
                         <Input
                             id="amount"
                             type="number"
@@ -142,21 +156,24 @@ function NewExpenseDialog() {
                             value={data.amount}
                             onChange={(e) => setData("amount", e.target.value)}
                             placeholder="contoh: 25000"
+                            className={isLansia ? "h-14 text-xl" : ""}
                         />
                         {errors.amount && (
-                            <p className="text-xs text-red-500">
+                            <p className={`text-red-500 ${isLansia ? "text-base" : "text-xs"}`}>
                                 {errors.amount}
                             </p>
                         )}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="category">Kategori</Label>
+                        <Label htmlFor="category" className={isLansia ? "text-lg" : ""}>
+                            Kategori
+                        </Label>
                         <Select
                             value={data.category}
                             onValueChange={(v) => setData("category", v)}
                         >
-                            <SelectTrigger id="category">
+                            <SelectTrigger id="category" className={isLansia ? "h-14 text-xl" : ""}>
                                 <SelectValue placeholder="Pilih kategori" />
                             </SelectTrigger>
                             <SelectContent>
@@ -164,6 +181,7 @@ function NewExpenseDialog() {
                                     <SelectItem
                                         key={opt.value}
                                         value={opt.value}
+                                        className={isLansia ? "text-lg" : ""}
                                     >
                                         {opt.label}
                                     </SelectItem>
@@ -171,14 +189,16 @@ function NewExpenseDialog() {
                             </SelectContent>
                         </Select>
                         {errors.category && (
-                            <p className="text-xs text-red-500">
+                            <p className={`text-red-500 ${isLansia ? "text-base" : "text-xs"}`}>
                                 {errors.category}
                             </p>
                         )}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="description">Catatan (opsional)</Label>
+                        <Label htmlFor="description" className={isLansia ? "text-lg" : ""}>
+                            Catatan (opsional)
+                        </Label>
                         <Input
                             id="description"
                             value={data.description}
@@ -187,9 +207,10 @@ function NewExpenseDialog() {
                             }
                             placeholder="contoh: Makan siang di kantin"
                             maxLength={255}
+                            className={isLansia ? "h-14 text-xl" : ""}
                         />
                         {errors.description && (
-                            <p className="text-xs text-red-500">
+                            <p className={`text-red-500 ${isLansia ? "text-base" : "text-xs"}`}>
                                 {errors.description}
                             </p>
                         )}
@@ -199,7 +220,7 @@ function NewExpenseDialog() {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="w-full"
+                            className={`w-full ${isLansia ? "h-14 text-xl" : ""}`}
                         >
                             {processing ? "Menyimpan..." : "Simpan Pengeluaran"}
                         </Button>
@@ -211,28 +232,32 @@ function NewExpenseDialog() {
 }
 
 export default function Transactions({ transactions }) {
+    const { auth } = usePage().props;
+    const isLansia = auth.user.role === "lansia";
     const rows = transactions?.data ?? [];
     const links = transactions?.links ?? [];
 
     return (
-        <RemajaLayout>
+        <>
             <Head title="Transaksi" />
 
-            <div className="mb-6 flex items-center justify-between">
+            <div className={`mb-6 flex items-center justify-between ${isLansia ? "flex-wrap gap-4" : ""}`}>
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">
+                    <h1 className={`font-bold text-slate-800 ${isLansia ? "text-4xl" : "text-2xl"}`}>
                         Transaksi
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className={`text-slate-500 ${isLansia ? "mt-1 text-xl" : "text-sm"}`}>
                         Riwayat lengkap transaksi kamu.
                     </p>
                 </div>
-                <NewExpenseDialog />
+                <NewExpenseDialog isLansia={isLansia} />
             </div>
 
-            <Card>
+            <Card className={isLansia ? "border-4 border-emerald-100" : ""}>
                 <CardHeader>
-                    <CardTitle className="text-sm font-medium text-slate-500">
+                    <CardTitle
+                        className={`font-medium text-slate-500 ${isLansia ? "text-xl" : "text-sm"}`}
+                    >
                         Riwayat Transaksi
                     </CardTitle>
                 </CardHeader>
@@ -246,11 +271,13 @@ export default function Transactions({ transactions }) {
                                 return (
                                     <div
                                         key={trx.id}
-                                        className="flex items-center justify-between py-3"
+                                        className={`flex items-center justify-between ${isLansia ? "py-5" : "py-3"}`}
                                     >
                                         <div>
-                                            <div className="mb-1 flex items-center gap-2">
-                                                <p className="text-sm font-medium text-slate-700">
+                                            <div className="mb-1 flex flex-wrap items-center gap-2">
+                                                <p
+                                                    className={`font-medium text-slate-700 ${isLansia ? "text-xl" : "text-sm"}`}
+                                                >
                                                     {trx.description ||
                                                         (CATEGORY_OPTIONS.find(
                                                             (c) =>
@@ -259,9 +286,11 @@ export default function Transactions({ transactions }) {
                                                         )?.label ??
                                                             trx.category)}
                                                 </p>
-                                                <TypeBadge type={trx.type} />
+                                                <TypeBadge type={trx.type} isLansia={isLansia} />
                                             </div>
-                                            <p className="text-xs text-slate-400">
+                                            <p
+                                                className={`text-slate-400 ${isLansia ? "text-base" : "text-xs"}`}
+                                            >
                                                 {new Date(
                                                     trx.created_at,
                                                 ).toLocaleString("id-ID")}
@@ -269,7 +298,9 @@ export default function Transactions({ transactions }) {
                                         </div>
                                         <div className="text-right">
                                             <p
-                                                className={`text-sm font-semibold ${
+                                                className={`font-semibold ${
+                                                    isLansia ? "text-2xl" : "text-sm"
+                                                } ${
                                                     meta.sign === "+"
                                                         ? "text-green-600"
                                                         : "text-slate-800"
@@ -278,14 +309,16 @@ export default function Transactions({ transactions }) {
                                                 {meta.sign}
                                                 {formatRupiah(trx.amount)}
                                             </p>
-                                            <StatusBadge status={trx.status} />
+                                            <StatusBadge status={trx.status} isLansia={isLansia} />
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        <p className="py-8 text-center text-sm text-slate-400">
+                        <p
+                            className={`py-8 text-center text-slate-400 ${isLansia ? "text-xl" : "text-sm"}`}
+                        >
                             Belum ada transaksi.
                         </p>
                     )}
@@ -300,7 +333,7 @@ export default function Transactions({ transactions }) {
                                         __html: link.label,
                                     }}
                                     preserveScroll
-                                    className={`rounded-md px-3 py-1 text-sm ${
+                                    className={`rounded-md px-3 py-1 ${isLansia ? "text-lg" : "text-sm"} ${
                                         link.active
                                             ? "bg-primary text-primary-foreground"
                                             : "text-slate-500 hover:bg-slate-100"
@@ -311,6 +344,12 @@ export default function Transactions({ transactions }) {
                     )}
                 </CardContent>
             </Card>
-        </RemajaLayout>
+        </>
     );
 }
+
+Transactions.layout = (page) => {
+    const role = page.props.auth.user.role;
+    const Layout = role === "lansia" ? LansiaLayout : RemajaLayout;
+    return <Layout>{page}</Layout>;
+};

@@ -34,6 +34,15 @@ const fadeUp = {
     }),
 };
 
+/*
+|--------------------------------------------------------------------------
+| Request Card
+| Catatan warna: kartu ini sengaja tetap pakai palet amber/orange — bukan
+| warna tema — karena fungsinya menandai "butuh perhatian", jadi harus
+| konsisten kebaca sebagai peringatan di peran manapun.
+|--------------------------------------------------------------------------
+*/
+
 function RequestCard({ request, index }) {
     const [reason, setReason] = useState('');
     const [showReasonBox, setShowReasonBox] = useState(false);
@@ -62,18 +71,17 @@ function RequestCard({ request, index }) {
 
     return (
         <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index}>
-            {/* Amber tetap dipakai: penanda "menunggu keputusan" */}
             <Card className="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
                 <CardContent className="p-5 sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-bold text-slate-700">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
                                 {initials(requester?.name)}
                             </div>
 
                             <div className="min-w-0">
                                 <p className="truncate font-semibold text-slate-900">{requester?.name}</p>
-                                <Badge variant="outline" className="mt-1.5 rounded-full border-slate-200 bg-slate-50 text-slate-600">
+                                <Badge variant="outline" className="mt-1.5 rounded-full border-amber-200 bg-amber-50 text-amber-700">
                                     {roleLabel[requester?.role] ?? requester?.role}
                                 </Badge>
                                 <p className="mt-2 text-sm text-slate-500">{trx?.description ?? 'Tanpa keterangan'}</p>
@@ -89,7 +97,7 @@ function RequestCard({ request, index }) {
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="Alasan menolak (opsional)"
                             rows={2}
-                            className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                            className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-[var(--ayom-primary)] focus:outline-none"
                         />
                     )}
 
@@ -97,7 +105,7 @@ function RequestCard({ request, index }) {
                         <button
                             onClick={approve}
                             disabled={busy}
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--ayom-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--ayom-primary-dark)] active:scale-[0.98] disabled:opacity-50"
                         >
                             <Check className="h-4 w-4" /> Setujui
                         </button>
@@ -116,6 +124,12 @@ function RequestCard({ request, index }) {
     );
 }
 
+/*
+|--------------------------------------------------------------------------
+| Page
+|--------------------------------------------------------------------------
+*/
+
 export default function ApprovalCenter() {
     const { requests = [], flash } = usePage().props;
 
@@ -125,7 +139,7 @@ export default function ApprovalCenter() {
 
             <div className="space-y-6">
                 {flash?.success && (
-                    <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
                         {flash.success}
                     </div>
                 )}
@@ -133,7 +147,7 @@ export default function ApprovalCenter() {
                 {requests.length === 0 ? (
                     <Card className="rounded-3xl border-dashed border-slate-300 bg-slate-50/60">
                         <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
-                            <ShieldCheck className="h-10 w-10 text-slate-300" />
+                            <ShieldCheck className="h-10 w-10 text-slate-400" />
                             <p className="text-sm text-slate-500">Tidak ada transaksi yang menunggu persetujuan saat ini.</p>
                         </CardContent>
                     </Card>

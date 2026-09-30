@@ -89,7 +89,11 @@ class TaskController extends Controller
             'Misi belum disubmit.'
         );
 
-        $task->approve($actor);
+        try {
+            $task->approve($actor);
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
 
         ActivityLog::record(
             'approve_task',

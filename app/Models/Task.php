@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Task extends Model
 {
@@ -95,7 +96,16 @@ class Task extends Model
     }
 
     public function approve(User $reviewer): void
-    {
+{
+    DB::transaction(function () use ($reviewer) {
+        $family = $this->family()->lockForUpdate()->first();
+
+        if (! $family || $family->balance < $this->reward_amount) {
+            throw new \RuntimeException('Saldo keluarga tidak cukup untuk menyetujui misi ini.');
+        }
+
+        $family->decrement('balance', $this->reward_amount);
+
         $this->update([
             'status' => 'approved',
             'reviewed_by' => $reviewer->id,
@@ -115,7 +125,8 @@ class Task extends Model
             'approved_by' => $reviewer->id,
             'approved_at' => now(),
         ]);
-    }
+    });
+}
 
     public function reject(User $reviewer, ?string $reason = null): void
     {

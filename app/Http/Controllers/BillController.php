@@ -66,7 +66,7 @@ class BillController extends Controller
 
         $wallet = Auth::user()->wallet;
 
-        if (! $wallet->hasSufficientBalance((float) $bill->amount)) {
+        if (!$wallet->hasSufficientBalance((float) $bill->amount)) {
             return back()->withErrors(['amount' => 'Saldo tidak cukup untuk membayar tagihan ini.']);
         }
 
@@ -117,5 +117,17 @@ class BillController extends Controller
         });
 
         return redirect()->back()->with('success', 'Tagihan berhasil dibayar.');
+    }
+
+    public function myBillsOrangTua(): Response
+    {
+        $user = Auth::user();
+
+        return Inertia::render('OrangTua/MyBills', [
+            'bills' => $user->bills()
+                ->where('is_active', true)
+                ->orderBy('next_due_date')
+                ->get(),
+        ]);
     }
 }

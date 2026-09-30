@@ -31,17 +31,18 @@ class GuardianViewController extends Controller
     }
 
     public function show(User $user): Response
-{
-    /** @var User $actor */
-    $actor = Auth::user();
+    {
+        /** @var User $actor */
+        $actor = Auth::user();
 
-    abort_unless($actor->isGuardianOf($user), 403);
+        abort_unless($actor->isGuardianOf($user), 403);
 
-    return Inertia::render('OrangTua/GuardianMemberDetail', [
-        'member' => $user->load('wallet'),
-        'transactions' => $user->transactions()
-            ->latest()
-            ->paginate(20),
-    ]);
-}
+        return Inertia::render('OrangTua/GuardianMemberDetail', [
+            'member' => $user->load('wallet'),
+            'transactions' => $user->transactions()
+                ->latest()
+                ->paginate(20),
+            'bills' => $user->bills()->orderBy('next_due_date')->get(),
+        ]);
+    }
 }

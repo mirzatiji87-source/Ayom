@@ -8,7 +8,7 @@ import axios from "axios";
 import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
 import { Card, CardContent } from "@/Components/ui/card";
 import CurrencyInput from "@/Components/ui/currency-input";
-import { Wallet, ArrowUpRight, Users, Loader2 } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowRightLeft, Users, Loader2 } from "lucide-react";
 
 const rupiah = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -47,6 +47,8 @@ export default function TopUpLimit() {
                 return;
             }
 
+            // Masih pending di sisi Midtrans - coba lagi beberapa kali (kadang butuh
+            // beberapa detik walau popup sudah bilang sukses).
             if (attempt < 5) {
                 setTimeout(() => verifyAndRefresh(orderId, attempt + 1), 1500);
             } else {
@@ -61,7 +63,45 @@ export default function TopUpLimit() {
         }
     };
 
-    const submit = async (e) => {
+    // Jalur BARU: ada recipient -> ini transfer internal dari saldo keluarga,
+    // bukan pembayaran dari luar. Langsung panggil WalletController::allocate,
+    // tanpa Midtrans sama sekali.
+    const submitTransfer = (e) => {
+        e.preventDefault();
+        setErrorMsg("");
+        setStatusMsg("");
+
+        if (!amount || Number(amount) <= 0) {
+            setErrorMsg("Masukkan nominal yang valid.");
+            return;
+        }
+
+        setProcessing(true);
+
+        router.post(
+            route("wallet.allocate", recipient.id),
+            { amount: Number(amount) },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setStatusMsg(
+                        `Saldo berhasil ditransfer ke ${recipient.name}.`,
+                    );
+                    setAmount("");
+                },
+                onError: (errors) => {
+                    setErrorMsg(
+                        errors.amount ?? "Gagal mentransfer saldo.",
+                    );
+                },
+                onFinish: () => setProcessing(false),
+            },
+        );
+    };
+
+    // Jalur LAMA: tanpa recipient -> ini isi saldo keluarga dari luar,
+    // tetap lewat Midtrans seperti sebelumnya.
+    const submitMidtrans = async (e) => {
         e.preventDefault();
         setErrorMsg("");
         setStatusMsg("");
@@ -76,7 +116,7 @@ export default function TopUpLimit() {
         try {
             const { data } = await axios.post(route("orang-tua.top-up.store"), {
                 amount: Number(amount),
-                recipient_id: recipient?.id ?? null,
+                recipient_id: null,
             });
 
             window.snap.pay(data.snap_token, {
@@ -108,22 +148,29 @@ export default function TopUpLimit() {
         }
     };
 
+    const isTransfer = Boolean(recipient);
+    const submit = isTransfer ? submitTransfer : submitMidtrans;
+
     return (
         <OrangTuaLayout
-            title="Top-up Saldo"
-            subtitle="Isi ulang saldo keluarga secara terpusat"
+            title={isTransfer ? "Isi Saldo Anggota" : "Top-up Saldo"}
+            subtitle={
+                isTransfer
+                    ? `Transfer dari saldo keluarga ke ${recipient.name}`
+                    : "Isi ulang saldo keluarga secara terpusat"
+            }
         >
-            <Head title="Top-up Saldo" />
+            <Head title={isTransfer ? "Isi Saldo Anggota" : "Top-up Saldo"} />
 
             <div className="mx-auto max-w-xl space-y-6">
                 {flash?.success && (
-                    <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
                         {flash.success}
                     </div>
                 )}
 
                 {statusMsg && (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
                         {statusMsg}
                     </div>
                 )}
@@ -138,7 +185,7 @@ export default function TopUpLimit() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, ease: "easeOut" }}
-                    className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 p-6 text-white shadow-xl shadow-emerald-200/50 sm:p-8"
+                    className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--ayom-primary)] via-[var(--ayom-primary)] to-[var(--ayom-primary-dark)] p-6 text-white shadow-xl shadow-slate-200/50 sm:p-8"
                 >
                     <div
                         aria-hidden="true"
@@ -146,7 +193,7 @@ export default function TopUpLimit() {
                     />
 
                     <div className="relative z-10">
-                        <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-50">
+                        <p className="flex items-center gap-1.5 text-sm font-medium text-white/80">
                             <Wallet className="h-4 w-4" />
                             {recipient
                                 ? `Saldo ${recipient.name}`
@@ -161,22 +208,32 @@ export default function TopUpLimit() {
                             )}
                         </h1>
 
-                        <p className="mt-3 flex items-center gap-1.5 text-sm text-emerald-50">
+                        <p className="mt-3 flex items-center gap-1.5 text-sm text-white/80">
                             <Users className="h-4 w-4" />
                             {family?.name ?? "Keluarga"} ·{" "}
                             {family?.members_count ?? 0} anggota
                         </p>
+
+                        {isTransfer && (
+                            <p className="mt-3 border-t border-white/20 pt-3 text-sm text-white/80">
+                                Sisa saldo keluarga:{" "}
+                                <span className="font-bold text-white">
+                                    {rupiah(family?.balance)}
+                                </span>
+                            </p>
+                        )}
                     </div>
                 </motion.section>
 
                 <Card className="rounded-3xl border-slate-200 shadow-sm">
                     <CardContent className="p-6">
                         <h2 className="text-lg font-bold text-slate-900">
-                            Isi Ulang Saldo
+                            {isTransfer ? "Transfer Saldo" : "Isi Ulang Saldo"}
                         </h2>
                         <p className="mt-1 text-sm text-slate-500">
-                            Masukkan nominal top-up. Kamu akan diarahkan ke
-                            halaman pembayaran (VA, e-wallet, atau QRIS).
+                            {isTransfer
+                                ? `Nominal ini langsung dipotong dari saldo keluarga dan masuk ke wallet ${recipient.name}. Tidak ada pembayaran dari luar.`
+                                : "Masukkan nominal top-up. Kamu akan diarahkan ke halaman pembayaran (VA, e-wallet, atau QRIS)."}
                         </p>
 
                         <form onSubmit={submit} className="mt-5 space-y-4">
@@ -202,7 +259,7 @@ export default function TopUpLimit() {
                                         key={amt}
                                         type="button"
                                         onClick={() => setAmount(String(amt))}
-                                        className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                                        className="rounded-full border border-[var(--ayom-primary)]/20 bg-[var(--ayom-primary)]/10 px-3.5 py-1.5 text-xs font-semibold text-[var(--ayom-primary)] transition hover:bg-[var(--ayom-primary)]/15"
                                     >
                                         {rupiah(amt)}
                                     </button>
@@ -212,12 +269,19 @@ export default function TopUpLimit() {
                             <button
                                 type="submit"
                                 disabled={processing || !amount}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ayom-primary)] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--ayom-primary-dark)] active:scale-[0.98] disabled:opacity-50"
                             >
                                 {processing ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        Menyiapkan pembayaran...
+                                        {isTransfer
+                                            ? "Mentransfer..."
+                                            : "Menyiapkan pembayaran..."}
+                                    </>
+                                ) : isTransfer ? (
+                                    <>
+                                        <ArrowRightLeft className="h-4 w-4" />
+                                        Transfer ke {recipient.name}
                                     </>
                                 ) : (
                                     <>

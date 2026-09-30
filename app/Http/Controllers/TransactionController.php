@@ -85,7 +85,7 @@ class TransactionController extends Controller
             ->latest()
             ->paginate(20);
 
-        return inertia('Transactions/Index', [
+        return inertia('Shared/Transactions', [
             'transactions' => $transactions,
         ]);
     }

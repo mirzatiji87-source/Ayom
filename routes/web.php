@@ -64,6 +64,8 @@ Route::middleware('auth')->group(function () {
 
     // ---------- ORANG TUA ----------
     Route::middleware('role:orang_tua')->prefix('orang-tua')->name('orang-tua.')->group(function () {
+        Route::get('/tagihan-saya', [BillController::class, 'myBillsOrangTua'])->name('bills.mine');
+        Route::post('/tagihan-saya/{bill}/bayar', [BillController::class, 'payNow'])->name('bills.pay-now');
         Route::post('/top-up/verify', [WalletController::class, 'verifyTopUpStatus'])
             ->name('top-up.verify');
         Route::get('/dashboard', [OrangTuaDashboardController::class, 'index'])->name('dashboard');

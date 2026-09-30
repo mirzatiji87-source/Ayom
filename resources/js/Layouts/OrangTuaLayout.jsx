@@ -30,6 +30,7 @@ import {
     LogOut,
     Settings,
     ListChecks,
+    Receipt,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -50,6 +51,11 @@ const NAV_ITEMS = [
         routeName: "orang-tua.tasks.index",
         icon: ListChecks,
         notifKey: "tasks",
+    },
+    {
+        label: "Tagihan Saya",
+        routeName: "orang-tua.bills.mine",
+        icon: Receipt,
     },
     { label: "Top-up Saldo", routeName: "orang-tua.top-up.form", icon: Wallet },
     {

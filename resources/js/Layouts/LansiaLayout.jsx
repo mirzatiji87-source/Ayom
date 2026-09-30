@@ -1,4 +1,5 @@
 // resources/js/Layouts/LansiaLayout.jsx
+import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -64,7 +65,7 @@ function ProfileMenu({ user }) {
     const name = user?.name ?? "Pengguna";
 
     return (
-        <div className="relative hidden md:block" ref={menuRef}>
+        <div className="relative hidden lg:block" ref={menuRef}>
             <motion.button
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setOpen((v) => !v)}
@@ -161,7 +162,7 @@ function MobileMenu({ user }) {
     }, [open]);
 
     return (
-        <div className="md:hidden">
+        <div className="lg:hidden">
             <motion.button
                 whileTap={{ scale: 0.94 }}
                 onClick={() => setOpen(true)}
@@ -173,96 +174,99 @@ function MobileMenu({ user }) {
                 <Menu className="h-6 w-6" />
             </motion.button>
 
-            <AnimatePresence>
-                {open && (
-                    <>
-                        {/* Overlay gelap */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            onClick={() => setOpen(false)}
-                            className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[2px]"
-                        />
+            {createPortal(
+                <AnimatePresence>
+                    {open && (
+                        <>
+                            {/* Overlay gelap */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                onClick={() => setOpen(false)}
+                                className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[2px]"
+                            />
 
-                        {/* Drawer */}
-                        <motion.div
-                            initial={{ x: "100%" }}
-                            animate={{ x: 0 }}
-                            exit={{ x: "100%" }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 320,
-                                damping: 34,
-                            }}
-                            className="fixed inset-y-0 right-0 z-50 flex w-[85%] max-w-sm flex-col bg-white shadow-2xl"
-                        >
-                            {/* Header drawer: profil + tombol tutup */}
-                            <div className="flex items-center gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 pb-5 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
-                                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-base font-bold text-white shadow-inner">
-                                    {getInitials(name)}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-lg font-bold text-slate-900">
-                                        {name}
-                                    </p>
-                                    {user?.email && (
-                                        <p className="truncate text-sm text-slate-500">
-                                            {user.email}
+                            {/* Drawer */}
+                            <motion.div
+                                initial={{ x: "100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "100%" }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 320,
+                                    damping: 34,
+                                }}
+                                className="fixed inset-y-0 right-0 z-50 flex w-[85%] max-w-sm flex-col bg-white shadow-2xl"
+                            >
+                                {/* Header drawer: profil + tombol tutup */}
+                                <div className="flex items-center gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 pb-5 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
+                                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-base font-bold text-white shadow-inner">
+                                        {getInitials(name)}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-lg font-bold text-slate-900">
+                                            {name}
                                         </p>
-                                    )}
+                                        {user?.email && (
+                                            <p className="truncate text-sm text-slate-500">
+                                                {user.email}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setOpen(false)}
+                                        aria-label="Tutup menu"
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors duration-150 hover:bg-white hover:text-slate-700"
+                                    >
+                                        <X className="h-6 w-6" />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => setOpen(false)}
-                                    aria-label="Tutup menu"
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors duration-150 hover:bg-white hover:text-slate-700"
-                                >
-                                    <X className="h-6 w-6" />
-                                </button>
-                            </div>
 
-                            {/* Daftar navigasi */}
-                            <nav className="flex-1 overflow-y-auto px-3 py-4">
-                                {NAV_ITEMS.map((item) => {
-                                    const Icon = item.icon;
-                                    const active = isActiveRoute(
-                                        item.routeName,
-                                    );
-                                    return (
-                                        <Link
-                                            key={item.routeName}
-                                            href={route(item.routeName)}
-                                            onClick={() => setOpen(false)}
-                                            className={`mb-1.5 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-lg font-semibold transition-colors duration-150 ${
-                                                active
-                                                    ? "bg-emerald-600 text-white shadow-sm shadow-emerald-300"
-                                                    : "text-slate-700 hover:bg-emerald-50"
-                                            }`}
-                                        >
-                                            <Icon className="h-6 w-6" />
-                                            {item.label}
-                                        </Link>
-                                    );
-                                })}
-                            </nav>
+                                {/* Daftar navigasi */}
+                                <nav className="flex-1 overflow-y-auto px-3 py-4">
+                                    {NAV_ITEMS.map((item) => {
+                                        const Icon = item.icon;
+                                        const active = isActiveRoute(
+                                            item.routeName,
+                                        );
+                                        return (
+                                            <Link
+                                                key={item.routeName}
+                                                href={route(item.routeName)}
+                                                onClick={() => setOpen(false)}
+                                                className={`mb-1.5 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-lg font-semibold transition-colors duration-150 ${
+                                                    active
+                                                        ? "bg-emerald-600 text-white shadow-sm shadow-emerald-300"
+                                                        : "text-slate-700 hover:bg-emerald-50"
+                                                }`}
+                                            >
+                                                <Icon className="h-6 w-6" />
+                                                {item.label}
+                                            </Link>
+                                        );
+                                    })}
+                                </nav>
 
-                            {/* Tombol keluar */}
-                            <div className="border-t border-emerald-100 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-                                <Link
-                                    href={route("logout")}
-                                    method="post"
-                                    as="button"
-                                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left text-lg font-semibold text-rose-600 transition-colors duration-150 hover:bg-rose-50"
-                                >
-                                    <LogOut className="h-6 w-6" />
-                                    Keluar
-                                </Link>
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+                                {/* Tombol keluar */}
+                                <div className="border-t border-emerald-100 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+                                    <Link
+                                        href={route("logout")}
+                                        method="post"
+                                        as="button"
+                                        className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left text-lg font-semibold text-rose-600 transition-colors duration-150 hover:bg-rose-50"
+                                    >
+                                        <LogOut className="h-6 w-6" />
+                                        Keluar
+                                    </Link>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>,
+                document.body,
+            )}
         </div>
     );
 }
@@ -294,7 +298,7 @@ export default function LansiaLayout({ children, user }) {
                     </motion.div>
 
                     {/* Nav horizontal — pill dengan indikator aktif yang meluncur (layoutId), desktop saja */}
-                    <nav className="hidden items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50/60 p-1 md:flex">
+                    <nav className="hidden items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50/60 p-1 lg:flex">
                         {NAV_ITEMS.map((item) => {
                             const Icon = item.icon;
                             const active = isActiveRoute(item.routeName);
