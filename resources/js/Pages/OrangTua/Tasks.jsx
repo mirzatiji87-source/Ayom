@@ -13,33 +13,40 @@ import {
 import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
 import CreateTaskDialog from "@/Components/OrangTua/CreateTaskDialog";
 import {
-    formatDate,
-    formatDateTime,
-    formatRupiah,
-    initials,
-} from "@/lib/ayom-theme";
+    EmptyState,
+    FlashMessage,
+    InitialsAvatar,
+    Panel,
+    SHAPE_CARD,
+    SHAPE_CARD_ALT,
+    btnDanger,
+    btnDangerOutline,
+    btnOutline,
+    btnPrimary,
+} from "@/Components/OrangTua/ui";
+import { formatDate, formatDateTime, formatRupiah } from "@/lib/ayom-theme";
 
 const STATUS_META = {
     open: {
         label: "Berjalan",
         icon: Target,
         className:
-            "bg-[var(--ayom-primary)]/10 text-[var(--ayom-primary)] ring-[var(--ayom-primary)]/20",
+            "bg-[var(--ayom-primary-soft)] text-[var(--ayom-primary)] ring-[var(--ayom-primary-line)]",
     },
     submitted: {
         label: "Perlu direview",
         icon: Clock3,
-        className: "bg-amber-50 text-amber-800 ring-amber-200",
+        className: "bg-amber-100 text-amber-900 ring-amber-300",
     },
     approved: {
         label: "Selesai",
         icon: CheckCircle2,
-        className: "bg-green-50 text-green-800 ring-green-200",
+        className: "bg-emerald-100 text-emerald-900 ring-emerald-300",
     },
     rejected: {
         label: "Ditolak",
         icon: XCircle,
-        className: "bg-rose-50 text-rose-700 ring-rose-200",
+        className: "bg-red-100 text-red-800 ring-red-300",
     },
 };
 
@@ -63,16 +70,16 @@ function StatusBadge({ status }) {
     const meta = STATUS_META[status] ?? {
         label: status,
         icon: Target,
-        className: "bg-slate-50 text-slate-600 ring-slate-200",
+        className: "bg-slate-100 text-slate-700 ring-slate-300",
     };
 
     const Icon = meta.icon;
 
     return (
         <span
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${meta.className}`}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ring-1 ${meta.className}`}
         >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className="h-4 w-4" />
             {meta.label}
         </span>
     );
@@ -133,9 +140,7 @@ export default function Tasks({ tasks = [], dependents = [] }) {
 
         router.put(
             route("tasks.reject", task.id),
-            {
-                reason: reason.trim() || null,
-            },
+            { reason: reason.trim() || null },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -154,24 +159,16 @@ export default function Tasks({ tasks = [], dependents = [] }) {
         >
             <Head title="Misi" />
 
-            <div className="mx-auto max-w-4xl space-y-6">
-                {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
+            <div className="mx-auto w-full max-w-6xl space-y-6 sm:space-y-8">
+                <FlashMessage type="success">{flash?.success}</FlashMessage>
 
-                {flash?.error && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-                        {flash.error}
-                    </div>
-                )}
+                <FlashMessage type="error">{flash?.error}</FlashMessage>
 
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div
                         role="tablist"
                         aria-label="Filter misi"
-                        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+                        className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
                     >
                         {FILTERS.map((item) => {
                             const active = filter === item.value;
@@ -183,19 +180,19 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                     role="tab"
                                     aria-selected={active}
                                     onClick={() => setFilter(item.value)}
-                                    className={`inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ${
+                                    className={`inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2.5 text-base font-semibold transition-colors duration-200 ${
                                         active
-                                            ? "bg-[var(--ayom-primary)] text-white shadow-sm"
-                                            : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800"
+                                            ? "bg-[var(--ayom-primary)] text-white"
+                                            : "bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
                                     }`}
                                 >
                                     {item.label}
 
                                     <span
-                                        className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${
+                                        className={`rounded-full px-2 py-0.5 text-sm tabular-nums ${
                                             active
                                                 ? "bg-white/20 text-white"
-                                                : "bg-slate-100 text-slate-600"
+                                                : "bg-slate-100 text-slate-700"
                                         }`}
                                     >
                                         {counts[item.value]}
@@ -209,24 +206,29 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                 </div>
 
                 {visible.length ? (
-                    <div className="space-y-4">
-                        {visible.map((task) => (
+                    <div className="grid items-start gap-5 sm:gap-6 lg:grid-cols-2">
+                        {visible.map((task, i) => (
                             <article
                                 key={task.id}
-                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:shadow-md"
+                                className={`flex flex-col p-5 ring-1 transition-shadow duration-200 hover:shadow-md sm:p-7 ${
+                                    task.status === "submitted"
+                                        ? "bg-amber-50 ring-amber-200"
+                                        : "bg-white ring-slate-200"
+                                } ${i % 2 === 0 ? SHAPE_CARD : SHAPE_CARD_ALT}`}
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="flex min-w-0 items-center gap-3">
-                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-700 text-xs font-bold text-white">
-                                            {initials(task.assignee?.name)}
-                                        </span>
+                                        <InitialsAvatar
+                                            name={task.assignee?.name}
+                                            className="h-12 w-12 text-sm"
+                                        />
 
                                         <div className="min-w-0">
-                                            <h3 className="truncate font-semibold text-slate-900">
+                                            <h3 className="break-words text-lg font-semibold leading-snug text-slate-900">
                                                 {task.title}
                                             </h3>
 
-                                            <p className="text-sm text-slate-500">
+                                            <p className="text-base text-slate-600">
                                                 {task.assignee?.name ?? "—"}
                                             </p>
                                         </div>
@@ -236,25 +238,25 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                 </div>
 
                                 {task.description && (
-                                    <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                                    <p className="mt-4 text-base leading-relaxed text-slate-700">
                                         {task.description}
                                     </p>
                                 )}
 
-                                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                                    <span className="font-bold tabular-nums text-slate-900">
+                                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-base">
+                                    <span className="text-xl font-extrabold tabular-nums text-slate-900">
                                         {formatRupiah(task.reward_amount)}
                                     </span>
 
                                     {task.due_date && (
-                                        <span className="inline-flex items-center gap-1.5 text-slate-500">
+                                        <span className="inline-flex items-center gap-1.5 text-slate-600">
                                             <CalendarDays className="h-4 w-4" />
                                             Tenggat {formatDate(task.due_date)}
                                         </span>
                                     )}
 
                                     {task.submitted_at && (
-                                        <span className="text-slate-500">
+                                        <span className="text-slate-600">
                                             Dikirim{" "}
                                             {formatDateTime(task.submitted_at)}
                                         </span>
@@ -263,18 +265,18 @@ export default function Tasks({ tasks = [], dependents = [] }) {
 
                                 {task.status === "rejected" &&
                                     task.rejection_reason && (
-                                        <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                                        <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-base text-red-800">
                                             Alasan: {task.rejection_reason}
                                         </p>
                                     )}
 
                                 {task.status === "submitted" && (
-                                    <div className="mt-5 border-t border-slate-100 pt-4">
+                                    <div className="mt-5 border-t border-slate-900/10 pt-5">
                                         {rejectingId === task.id ? (
                                             <div className="space-y-3">
                                                 <label
                                                     htmlFor={`reason-${task.id}`}
-                                                    className="block text-sm font-medium text-slate-700"
+                                                    className="block text-base font-medium text-slate-800"
                                                 >
                                                     Alasan penolakan (opsional)
                                                 </label>
@@ -288,10 +290,10 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                         )
                                                     }
                                                     placeholder="Contoh: Kamar belum rapi"
-                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-[var(--ayom-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ayom-primary)]/10"
+                                                    className="h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 text-base placeholder:text-slate-500 focus:border-[var(--ayom-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--ayom-primary-line)]"
                                                 />
 
-                                                <div className="flex flex-wrap gap-2">
+                                                <div className="flex flex-col gap-3 sm:flex-row">
                                                     <button
                                                         type="button"
                                                         disabled={
@@ -300,10 +302,10 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                         onClick={() =>
                                                             reject(task)
                                                         }
-                                                        className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition duration-200 hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        className={`${btnDanger} flex-1`}
                                                     >
                                                         {busyId === task.id && (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                            <Loader2 className="h-5 w-5 animate-spin" />
                                                         )}
                                                         Kirim penolakan
                                                     </button>
@@ -316,14 +318,14 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                             );
                                                             setReason("");
                                                         }}
-                                                        className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition duration-200 hover:bg-slate-50"
+                                                        className={btnOutline}
                                                     >
                                                         Batal
                                                     </button>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-col gap-3 sm:flex-row">
                                                 <button
                                                     type="button"
                                                     disabled={
@@ -332,12 +334,12 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                     onClick={() =>
                                                         approve(task)
                                                     }
-                                                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[var(--ayom-primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-[var(--ayom-primary-dark)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className={`${btnPrimary} flex-1`}
                                                 >
                                                     {busyId === task.id ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        <Loader2 className="h-5 w-5 animate-spin" />
                                                     ) : (
-                                                        <CheckCircle2 className="h-4 w-4" />
+                                                        <CheckCircle2 className="h-5 w-5" />
                                                     )}
                                                     Setujui
                                                 </button>
@@ -347,7 +349,7 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                                     onClick={() =>
                                                         setRejectingId(task.id)
                                                     }
-                                                    className="cursor-pointer rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 transition duration-200 hover:bg-rose-50"
+                                                    className={`${btnDangerOutline} flex-1`}
                                                 >
                                                     Tolak
                                                 </button>
@@ -359,13 +361,11 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                         ))}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-14 text-center">
-                        <Inbox className="h-8 w-8 text-slate-300" />
-
-                        <p className="mt-3 text-sm text-slate-500">
+                    <Panel className="py-6">
+                        <EmptyState icon={Inbox}>
                             {EMPTY_TEXT[filter]}
-                        </p>
-                    </div>
+                        </EmptyState>
+                    </Panel>
                 )}
             </div>
         </OrangTuaLayout>

@@ -23,6 +23,9 @@ export const themeVars = {
     "--ayom-accent-soft": "#FBEEDD",
     "--ayom-danger": "#B3261E",
     "--ayom-danger-soft": "#FBEAE8",
+    "--ayom-primary-foreground": "#F3FBF9",
+    "--ayom-primary-soft": "#E4F0EE",
+    "--ayom-primary-line": "#BCD6D2",
 };
 
 // Metadata visual per role — dipakai di RolePill, chart distribusi, dsb.

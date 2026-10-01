@@ -4,22 +4,21 @@ import { useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import LansiaLayout from '@/Layouts/LansiaLayout';
 import { Button } from '@/Components/ui/button';
-import { Card } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 
 import {
     Mic,
     MicOff,
-    Wallet,
     ReceiptText,
     History,
     PhoneCall,
     AlertTriangle,
     Clock3,
-    ArrowDownCircle,
-    ArrowUpCircle,
+    ArrowDownLeft,
+    ArrowUpRight,
     ChevronRight,
-    Sparkles,
+    ShoppingBag,
+    Inbox,
 } from 'lucide-react';
 
 const formatRupiah = (value) =>
@@ -28,6 +27,14 @@ const formatRupiah = (value) =>
         currency: 'IDR',
         minimumFractionDigits: 0,
     }).format(value ?? 0);
+
+const formatTanggal = () =>
+    new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    }).format(new Date());
 
 function useSapaan() {
     const jam = new Date().getHours();
@@ -39,11 +46,16 @@ function useSapaan() {
     return 'Selamat malam';
 }
 
-/**
- * Text-to-speech sederhana - dipakai untuk kasih feedback suara
- * setiap kali perintah dikenali ATAU tidak dikenali, biar lansia
- * gak ngerasa sistemnya "diem aja" pas ngomong sesuatu yang di luar dugaan.
- */
+// route() milik Ziggy melempar error kalau nama route tidak ada,
+// dan error saat render bikin halaman kosong. Helper ini mencegahnya.
+const safeRoute = (name, params) => {
+    try {
+        return route(name, params);
+    } catch {
+        return null;
+    }
+};
+
 function ucapkan(teks) {
     if (!('speechSynthesis' in window)) return;
     const ucapan = new SpeechSynthesisUtterance(teks);
@@ -52,17 +64,13 @@ function ucapkan(teks) {
     window.speechSynthesis.speak(ucapan);
 }
 
-/**
- * Voice command sederhana menggunakan Web Speech API
- */
 function useVoiceCommand(onCommand) {
     const [isListening, setIsListening] = useState(false);
     const [heard, setHeard] = useState('');
 
     const startListening = () => {
         const SpeechRecognition =
-            window.SpeechRecognition ||
-            window.webkitSpeechRecognition;
+            window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
             const pesan = 'Maaf, perangkat ini tidak mendukung perintah suara.';
@@ -83,40 +91,39 @@ function useVoiceCommand(onCommand) {
         };
 
         recognition.onresult = (event) => {
-            const text =
-                event.results[0][0].transcript.toLowerCase();
-
+            const text = event.results[0][0].transcript.toLowerCase();
             setHeard(text);
-
             onCommand(text);
         };
 
         recognition.onerror = (event) => {
             setIsListening(false);
 
-            const pesan = {
-                'no-speech': 'Tidak ada suara terdengar. Coba lagi ya.',
-                'audio-capture': 'Mikrofon tidak ditemukan. Periksa perangkat Anda.',
-                'not-allowed': 'Izin mikrofon ditolak. Aktifkan izin mikrofon di browser.',
-            }[event.error] || 'Tidak terdengar jelas, coba lagi ya.';
+            const pesan =
+                {
+                    'no-speech': 'Tidak ada suara terdengar. Coba lagi ya.',
+                    'audio-capture': 'Mikrofon tidak ditemukan. Periksa perangkat Anda.',
+                    'not-allowed': 'Izin mikrofon ditolak. Aktifkan izin mikrofon di browser.',
+                }[event.error] || 'Tidak terdengar jelas, coba lagi ya.';
 
             setHeard(pesan);
             ucapkan(pesan);
         };
 
-        recognition.onend = () => {
-            setIsListening(false);
-        };
+        recognition.onend = () => setIsListening(false);
 
         recognition.start();
     };
 
-    return {
-        startListening,
-        isListening,
-        heard,
-    };
+    return { startListening, isListening, heard };
 }
+
+const LG_COLS = {
+    1: 'lg:grid-cols-1',
+    2: 'lg:grid-cols-2',
+    3: 'lg:grid-cols-3',
+    4: 'lg:grid-cols-4',
+};
 
 export default function Dashboard({
     lansia,
@@ -126,46 +133,32 @@ export default function Dashboard({
     recentTransactions,
 }) {
     const sapaan = useSapaan();
-
     const saldoRef = useRef(null);
 
-    /**
-     * Perintah suara.
-     * Setiap cabang ngasih feedback suara (ucapkan) biar lansia tau
-     * perintahnya kedengeran dan dimengerti. Kalau gak ada yang cocok,
-     * fallback di paling bawah kasih tau daftar perintah yang dikenali -
-     * jadi sistem gak pernah "diem" walau perintahnya di luar dugaan.
-     */
+    const buka = (nama, pesan) => {
+        const url = safeRoute(nama);
+        if (url) {
+            ucapkan(pesan);
+            router.visit(url);
+        } else {
+            ucapkan('Maaf, halaman itu belum tersedia.');
+        }
+    };
+
     const handleCommand = (text) => {
         if (text.includes('saldo')) {
             ucapkan(`Saldo Anda saat ini ${formatRupiah(wallet?.balance)}.`);
-            saldoRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-            });
-        } else if (
-            text.includes('tagihan') ||
-            text.includes('bayar')
-        ) {
-            ucapkan('Membuka halaman tagihan Anda.');
-            router.visit(
-                route('lansia.bills.index')
-            );
+            saldoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (text.includes('tagihan') || text.includes('bayar')) {
+            buka('lansia.bills.index', 'Membuka halaman tagihan Anda.');
         } else if (
             text.includes('riwayat') ||
             text.includes('transaksi') ||
             text.includes('mutasi')
         ) {
-            ucapkan('Membuka riwayat transaksi Anda.');
-            router.visit(
-                route('transactions.index')
-            );
-        } else if (
-            text.includes('belanja') ||
-            text.includes('checkout')
-        ) {
-            ucapkan('Membuka halaman belanja suara.');
-            router.visit(route('lansia.voice-checkout'));
+            buka('transactions.index', 'Membuka riwayat transaksi Anda.');
+        } else if (text.includes('belanja') || text.includes('checkout')) {
+            buka('lansia.voice-checkout', 'Membuka halaman belanja suara.');
         } else if (
             text.includes('keluarga') ||
             text.includes('telepon') ||
@@ -174,378 +167,254 @@ export default function Dashboard({
         ) {
             if (lansia?.family_phone) {
                 ucapkan('Menghubungi keluarga Anda.');
-                window.location.href =
-                    `tel:${lansia.family_phone}`;
+                window.location.href = `tel:${lansia.family_phone}`;
             } else {
                 ucapkan('Maaf, nomor keluarga belum terdaftar.');
             }
         } else {
-            // Fallback: perintah tidak dikenali - JANGAN diam, kasih tau + arahkan.
             ucapkan(
                 'Maaf, saya tidak mengerti. Coba ucapkan: lihat saldo, bayar tagihan, lihat riwayat, atau hubungi keluarga.'
             );
         }
     };
 
-    const {
-        startListening,
-        isListening,
-        heard,
-    } = useVoiceCommand(handleCommand);
+    const { startListening, isListening, heard } = useVoiceCommand(handleCommand);
+
+    const menu = [
+        { key: 'tagihan', label: 'Tagihan Saya', icon: ReceiptText, href: safeRoute('lansia.bills.index') },
+        { key: 'riwayat', label: 'Riwayat', icon: History, href: safeRoute('transactions.index') },
+        { key: 'belanja', label: 'Belanja Suara', icon: ShoppingBag, href: safeRoute('lansia.voice-checkout') },
+        ...(lansia?.family_phone
+            ? [{ key: 'keluarga', label: 'Hubungi Keluarga', icon: PhoneCall, href: `tel:${lansia.family_phone}`, external: true }]
+            : []),
+    ].filter((item) => item.href);
+
+    const transaksi = (recentTransactions ?? []).slice(0, 6);
+    const urlRiwayat = safeRoute('transactions.index');
 
     return (
         <LansiaLayout user={lansia}>
             <Head title="Beranda" />
 
-            {/* =====================================================
-                BACKGROUND DECORATION
-            ====================================================== */}
-
-            <div
-                aria-hidden="true"
-                className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-96 overflow-hidden"
-            >
-                <div className="ayom-blob absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
-
-                <div className="ayom-blob ayom-blob-delay absolute -right-16 top-10 h-64 w-64 rounded-full bg-teal-200/40 blur-3xl" />
-            </div>
-
-            {/* =====================================================
-                SAPAAN
-            ====================================================== */}
-
-            <div className="mb-6 flex items-center gap-2">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 lg:text-4xl">
-                        {sapaan},{' '}
-
-                        <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                            {lansia?.name?.split(' ')[0]}
-                        </span>
-                    </h1>
-
-                    {lansia?.family_name && (
-                        <p className="mt-1 text-lg text-slate-500 lg:text-xl">
-                            {lansia.family_name}
-                        </p>
-                    )}
-                </div>
-            </div>
-
-            {/* =====================================================
-                MAIN GRID
-            ====================================================== */}
-
-            <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-
-                {/* =================================================
-                    MAIN CONTENT
-                ================================================== */}
-
-                <div className="lg:col-span-2">
-
-                    {/* =============================================
-                        UPCOMING BILL
-                    ============================================== */}
-
-                    {upcomingBill?.is_due && (
-                        <Card className="mb-5 overflow-hidden border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm">
-                            <div className="flex items-start gap-3">
-
-                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                                    <AlertTriangle className="h-6 w-6 text-amber-600" />
-                                </span>
-
-                                <div className="flex-1">
-                                    <p className="text-xl font-bold text-amber-900">
-                                        Tagihan{' '}
-                                        {upcomingBill.name}{' '}
-                                        sudah jatuh tempo
-                                    </p>
-
-                                    <p className="text-lg text-amber-800">
-                                        {formatRupiah(
-                                            upcomingBill.amount
-                                        )}
+            <div className="mx-auto w-full max-w-6xl space-y-5 sm:space-y-6">
+                {/* PERINGATAN */}
+                {(upcomingBill?.is_due || pendingApprovals > 0) && (
+                    <div className="space-y-3">
+                        {upcomingBill?.is_due && (
+                            <div className="flex flex-col gap-3 rounded-3xl bg-amber-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-3">
+                                    <AlertTriangle className="h-7 w-7 shrink-0 text-amber-700" />
+                                    <p className="text-lg font-bold text-amber-950">
+                                        Tagihan {upcomingBill.name} jatuh tempo,{' '}
+                                        {formatRupiah(upcomingBill.amount)}
                                     </p>
                                 </div>
-                            </div>
 
-                            <Button
-                                size="lg"
-                                className="mt-4 h-14 w-full bg-amber-600 text-lg font-bold shadow-sm transition-all hover:bg-amber-700 hover:shadow-md active:scale-[0.98] lg:w-auto lg:px-10"
-                                onClick={() =>
-                                    router.post(
-                                        route(
-                                            'lansia.bills.pay-now',
-                                            upcomingBill.id
-                                        )
-                                    )
-                                }
-                            >
-                                Bayar Sekarang
-                            </Button>
-                        </Card>
-                    )}
-
-                    {/* =============================================
-                        PENDING APPROVAL
-                    ============================================== */}
-
-                    {pendingApprovals > 0 && (
-                        <Card className="mb-5 flex items-center gap-3 border-2 border-amber-200 bg-amber-50 p-4">
-                            <Clock3 className="h-6 w-6 shrink-0 text-amber-600" />
-
-                            <p className="text-lg font-semibold text-amber-900">
-                                {pendingApprovals} transaksi sedang
-                                menunggu persetujuan keluarga
-                            </p>
-                        </Card>
-                    )}
-
-                    {/* =============================================
-                        SALDO + VOICE COMMAND
-                    ============================================== */}
-
-                    <div className="lg:grid lg:grid-cols-2 lg:gap-6">
-
-                        {/* SALDO */}
-
-                        <div
-                            ref={saldoRef}
-                            className="mb-6"
-                        >
-                            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 p-6 text-white shadow-lg shadow-emerald-200">
-
-                                <div
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10"
-                                />
-
-                                <div
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute -bottom-14 -left-8 h-32 w-32 rounded-full bg-white/10"
-                                />
-
-                                <div className="relative mb-2 flex items-center gap-2 text-emerald-50">
-
-                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
-                                        <Wallet className="h-5 w-5 text-white" />
-                                    </span>
-
-                                    <span className="text-lg">
-                                        Saldo Anda
-                                    </span>
-                                </div>
-
-                                <p className="relative text-5xl font-extrabold tracking-tight text-white">
-                                    {formatRupiah(
-                                        wallet?.balance
-                                    )}
-                                </p>
-
-                                {wallet?.daily_remaining !== null &&
-                                    wallet?.daily_remaining !== undefined && (
-                                        <p className="relative mt-3 text-lg text-emerald-50">
-                                            Sisa boleh belanja hari ini:{' '}
-
-                                            <span className="font-bold text-white">
-                                                {formatRupiah(
-                                                    wallet.daily_remaining
-                                                )}
-                                            </span>
-                                        </p>
-                                    )}
-                            </Card>
-                        </div>
-
-                        {/* VOICE COMMAND */}
-
-                        <Card className="mb-6 flex flex-col items-center justify-center border-2 border-emerald-100 bg-white p-6 shadow-sm">
-
-                            <div className="relative flex h-28 w-28 items-center justify-center">
-
-                                {isListening && (
-                                    <>
-                                        <span className="ayom-ping absolute inset-0 rounded-full bg-rose-400/40" />
-
-                                        <span className="ayom-ping ayom-ping-delay absolute inset-0 rounded-full bg-rose-400/30" />
-                                    </>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={startListening}
-                                    aria-pressed={isListening}
-                                    aria-label={
-                                        isListening
-                                            ? 'Berhenti mendengarkan'
-                                            : 'Tekan untuk berbicara'
-                                    }
-                                    className={`relative flex h-28 w-28 items-center justify-center rounded-full shadow-lg transition-all duration-300 active:scale-95 ${
-                                        isListening
-                                            ? 'bg-rose-600'
-                                            : 'bg-gradient-to-br from-emerald-500 to-emerald-700 hover:shadow-emerald-200 hover:brightness-105'
-                                    }`}
+                                <Button
+                                    size="lg"
+                                    className="h-12 rounded-full bg-amber-700 px-8 text-lg font-bold hover:bg-amber-800"
+                                    onClick={() => {
+                                        const url = safeRoute('lansia.bills.pay-now', upcomingBill.id);
+                                        if (url) router.post(url);
+                                    }}
                                 >
-                                    {isListening ? (
-                                        <MicOff className="h-12 w-12 text-white" />
-                                    ) : (
-                                        <Mic className="h-12 w-12 text-white" />
-                                    )}
-                                </button>
+                                    Bayar Sekarang
+                                </Button>
                             </div>
+                        )}
 
-                            <p className="mt-3 flex items-center gap-1.5 text-center text-lg font-semibold text-slate-700">
-
-                                {!isListening && (
-                                    <Sparkles className="h-4 w-4 text-emerald-500" />
-                                )}
-
-                                {isListening
-                                    ? 'Mendengarkan...'
-                                    : 'Tekan lalu ucapkan perintah'}
-                            </p>
-
-                            {heard && (
-                                <p className="mt-1 text-center text-base italic text-slate-500">
-                                    "{heard}"
+                        {pendingApprovals > 0 && (
+                            <div className="flex items-center gap-3 rounded-3xl bg-amber-50 px-5 py-4 ring-1 ring-amber-200">
+                                <Clock3 className="h-7 w-7 shrink-0 text-amber-700" />
+                                <p className="text-lg font-semibold text-amber-950">
+                                    {pendingApprovals} transaksi menunggu persetujuan keluarga
                                 </p>
-                            )}
-
-                            <p className="mt-3 text-center text-sm text-slate-400">
-                                Contoh: "lihat saldo", "bayar tagihan", "lihat riwayat", "hubungi keluarga"
-                            </p>
-                        </Card>
-                    </div>
-
-                    {/* =================================================
-                        MENU UTAMA
-                    ================================================== */}
-
-                    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
-
-                        {/* TAGIHAN */}
-
-                        <Link
-                            href={route(
-                                'lansia.bills.index'
-                            )}
-                            className="group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-emerald-100 bg-white p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md active:translate-y-0 active:scale-[0.98]"
-                        >
-                            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 transition-colors duration-200 group-hover:bg-emerald-100">
-                                <ReceiptText className="h-8 w-8 text-emerald-700" />
-                            </span>
-
-                            <span className="text-lg font-bold text-slate-800">
-                                Tagihan Saya
-                            </span>
-                        </Link>
-
-                        {/* RIWAYAT */}
-
-                        <Link
-                            href={route(
-                                'transactions.index'
-                            )}
-                            className="group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-emerald-100 bg-white p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md active:translate-y-0 active:scale-[0.98]"
-                        >
-                            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 transition-colors duration-200 group-hover:bg-emerald-100">
-                                <History className="h-8 w-8 text-emerald-700" />
-                            </span>
-
-                            <span className="text-lg font-bold text-slate-800">
-                                Riwayat
-                            </span>
-                        </Link>
-
-                        {/* HUBUNGI KELUARGA */}
-
-                        {lansia?.family_phone && (
-                            <a
-                                href={`tel:${lansia.family_phone}`}
-                                className="group col-span-2 flex items-center justify-center gap-3 rounded-2xl border-2 border-emerald-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md active:translate-y-0 active:scale-[0.98] lg:col-span-1"
-                            >
-                                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 transition-colors duration-200 group-hover:bg-emerald-100">
-                                    <PhoneCall className="h-6 w-6 text-emerald-700" />
-                                </span>
-
-                                <span className="text-lg font-bold text-slate-800">
-                                    Hubungi Keluarga
-                                </span>
-                            </a>
+                            </div>
                         )}
                     </div>
-                </div>
+                )}
 
-                {/* =================================================
-                    RECENT TRANSACTIONS
-                ================================================== */}
+                {/* BARIS 1: SALDO + MIC (tinggi sama, tidak ada ruang kosong) */}
+                <div className="grid gap-5 sm:gap-6 lg:grid-cols-12">
+                    <section
+                        ref={saldoRef}
+                        className="relative flex flex-col justify-center overflow-hidden rounded-bl-3xl rounded-br-[3.5rem] rounded-tl-[3.5rem] rounded-tr-3xl bg-emerald-800 px-6 py-8 text-white sm:px-10 sm:py-10 lg:col-span-7"
+                    >
+                        <svg
+                            aria-hidden="true"
+                            viewBox="0 0 400 400"
+                            className="pointer-events-none absolute -bottom-28 -right-28 h-[24rem] w-[24rem] text-emerald-600/40"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                        >
+                            <circle cx="200" cy="200" r="60" />
+                            <circle cx="200" cy="200" r="110" />
+                            <circle cx="200" cy="200" r="160" />
+                            <circle cx="200" cy="200" r="195" />
+                        </svg>
 
-                {recentTransactions?.length > 0 && (
-                    <div className="lg:col-span-1">
+                        <div className="relative min-w-0">
+                            <p className="text-base text-emerald-200">{formatTanggal()}</p>
 
-                        <div className="mb-3 flex items-center justify-between">
+                            <h1 className="mt-1 font-serif text-2xl leading-snug sm:text-3xl">
+                                {sapaan}, {lansia?.name?.split(' ')[0]}
+                            </h1>
 
-                            <h2 className="text-xl font-bold text-slate-900">
-                                Transaksi Terakhir
-                            </h2>
+                            {lansia?.family_name && (
+                                <p className="text-base text-emerald-200">{lansia.family_name}</p>
+                            )}
 
-                            <Link
-                                href={route(
-                                    'transactions.index'
+                            <p className="mt-6 text-lg text-emerald-200">Saldo Anda</p>
+
+                            <p className="break-words text-5xl font-extrabold tracking-tight sm:text-6xl lg:text-5xl xl:text-6xl">
+                                {formatRupiah(wallet?.balance)}
+                            </p>
+
+                            {wallet?.daily_remaining !== null &&
+                                wallet?.daily_remaining !== undefined && (
+                                    <p className="mt-5 inline-flex flex-wrap items-center gap-x-2 rounded-full bg-emerald-900/50 px-5 py-2.5 text-base text-emerald-100 sm:text-lg">
+                                        Boleh dipakai hari ini
+                                        <span className="font-bold text-white">
+                                            {formatRupiah(wallet.daily_remaining)}
+                                        </span>
+                                    </p>
                                 )}
-                                className="flex items-center gap-0.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
-                            >
-                                Lihat semua
+                        </div>
+                    </section>
 
-                                <ChevronRight className="h-4 w-4" />
-                            </Link>
+                    <section className="flex items-center gap-5 rounded-bl-[3.5rem] rounded-br-3xl rounded-tl-3xl rounded-tr-[3.5rem] bg-amber-50 px-6 py-6 ring-1 ring-amber-200 sm:px-10 lg:col-span-5 lg:flex-col lg:justify-center lg:gap-0 lg:text-center">
+                        <div className="relative flex h-24 w-24 shrink-0 items-center justify-center sm:h-28 sm:w-28 lg:h-32 lg:w-32">
+                            {isListening && (
+                                <>
+                                    <span className="ayom-ping absolute inset-0 rounded-full bg-rose-400/50" />
+                                    <span className="ayom-ping ayom-ping-delay absolute inset-0 rounded-full bg-rose-400/30" />
+                                </>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={startListening}
+                                aria-pressed={isListening}
+                                aria-label={isListening ? 'Sedang mendengarkan' : 'Tekan untuk berbicara'}
+                                className={`relative flex h-full w-full items-center justify-center rounded-full shadow-lg transition-transform duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400 active:scale-95 ${
+                                    isListening
+                                        ? 'bg-rose-600 text-white'
+                                        : 'bg-amber-400 text-emerald-900 hover:bg-amber-300'
+                                }`}
+                            >
+                                {isListening ? (
+                                    <MicOff className="h-11 w-11 lg:h-12 lg:w-12" />
+                                ) : (
+                                    <Mic className="h-11 w-11 lg:h-12 lg:w-12" />
+                                )}
+                            </button>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="min-w-0 lg:mt-4">
+                            <p className="text-xl font-bold text-slate-900">
+                                {isListening ? 'Mendengarkan...' : 'Tekan, lalu bicara'}
+                            </p>
 
-                            {recentTransactions.map((trx) => {
+                            {heard ? (
+                                <p className="mt-1 text-base italic text-slate-600">"{heard}"</p>
+                            ) : (
+                                <p className="mt-1 text-base text-slate-600">
+                                    Coba ucapkan "lihat saldo", "bayar tagihan", atau "hubungi keluarga".
+                                </p>
+                            )}
+                        </div>
+                    </section>
+                </div>
 
-                                const isMasuk = [
-                                    'topup',
-                                    'allowance',
-                                ].includes(trx.type);
+                {/* BARIS 2: MENU, satu baris penuh, kolom menyesuaikan jumlah menu */}
+                <nav
+                    aria-label="Menu utama"
+                    className={`grid gap-3 sm:grid-cols-2 ${LG_COLS[menu.length] ?? 'lg:grid-cols-1'}`}
+                >
+                    {menu.map((item, i) => {
+                        const Icon = item.icon;
+                        const ganjilTerakhir = menu.length % 2 === 1 && i === menu.length - 1;
+
+                        const cls = `group flex min-h-[4.75rem] items-center gap-4 rounded-full bg-white py-2.5 pl-2.5 pr-5 ring-1 ring-emerald-900/15 transition hover:ring-emerald-700 active:scale-[0.98] ${
+                            ganjilTerakhir ? 'sm:col-span-2 lg:col-span-1' : ''
+                        }`;
+
+                        const isi = (
+                            <>
+                                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-white transition group-hover:bg-emerald-700">
+                                    <Icon className="h-7 w-7" />
+                                </span>
+                                <span className="flex-1 text-lg font-bold leading-tight text-slate-800">
+                                    {item.label}
+                                </span>
+                                <ChevronRight className="h-6 w-6 shrink-0 text-emerald-700 transition group-hover:translate-x-0.5 lg:hidden" />
+                            </>
+                        );
+
+                        return item.external ? (
+                            <a key={item.key} href={item.href} className={cls}>
+                                {isi}
+                            </a>
+                        ) : (
+                            <Link key={item.key} href={item.href} className={cls}>
+                                {isi}
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                {/* BARIS 3: TRANSAKSI, lebar penuh, dua kolom di desktop */}
+                <section className="rounded-bl-3xl rounded-br-3xl rounded-tl-3xl rounded-tr-[3.5rem] bg-emerald-50 px-5 py-6 sm:px-10 sm:py-8">
+                    <div className="mb-2 flex items-end justify-between gap-3">
+                        <h2 className="font-serif text-2xl text-slate-900 sm:text-3xl">
+                            Transaksi terakhir
+                        </h2>
+
+                        {urlRiwayat && (
+                            <Link
+                                href={urlRiwayat}
+                                className="shrink-0 pb-1 text-base font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
+                            >
+                                Lihat semua
+                            </Link>
+                        )}
+                    </div>
+
+                    {transaksi.length > 0 ? (
+                        <ul className="lg:columns-2 lg:gap-14">
+                            {transaksi.map((trx) => {
+                                const masuk = ['topup', 'allowance'].includes(trx.type);
 
                                 return (
-                                    <Card
+                                    <li
                                         key={trx.id}
-                                        className="flex items-center justify-between overflow-hidden border border-emerald-100 bg-white p-4 shadow-sm transition-all duration-200 hover:border-emerald-200 hover:shadow-md"
+                                        className="flex break-inside-avoid items-center justify-between gap-3 border-b border-emerald-900/10 py-4"
                                     >
-
-                                        <div className="flex items-center gap-3">
-
+                                        <div className="flex min-w-0 items-center gap-3">
                                             <span
                                                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-                                                    isMasuk
-                                                        ? 'bg-emerald-50'
-                                                        : 'bg-rose-50'
+                                                    masuk
+                                                        ? 'bg-emerald-200 text-emerald-900'
+                                                        : 'bg-rose-100 text-rose-700'
                                                 }`}
                                             >
-                                                {isMasuk ? (
-                                                    <ArrowDownCircle className="h-6 w-6 text-emerald-600" />
+                                                {masuk ? (
+                                                    <ArrowDownLeft className="h-6 w-6" />
                                                 ) : (
-                                                    <ArrowUpCircle className="h-6 w-6 text-rose-500" />
+                                                    <ArrowUpRight className="h-6 w-6" />
                                                 )}
                                             </span>
 
-                                            <div>
-
-                                                <p className="text-lg font-semibold text-slate-800">
-                                                    {trx.description ||
-                                                        trx.category}
+                                            <div className="min-w-0">
+                                                <p className="truncate text-lg font-semibold text-slate-800">
+                                                    {trx.description || trx.category}
                                                 </p>
 
-                                                {trx.status ===
-                                                    'pending' && (
+                                                {trx.status === 'pending' && (
                                                     <Badge
                                                         variant="outline"
-                                                        className="mt-1 border-amber-300 bg-amber-50 text-amber-800"
+                                                        className="border-amber-300 bg-amber-50 text-amber-800"
                                                     >
                                                         Menunggu persetujuan
                                                     </Badge>
@@ -554,76 +423,40 @@ export default function Dashboard({
                                         </div>
 
                                         <span
-                                            className={`shrink-0 text-lg font-bold ${
-                                                isMasuk
-                                                    ? 'text-emerald-700'
-                                                    : 'text-rose-600'
+                                            className={`shrink-0 text-base font-bold sm:text-lg ${
+                                                masuk ? 'text-emerald-800' : 'text-rose-700'
                                             }`}
                                         >
-                                            {isMasuk
-                                                ? '+'
-                                                : '-'}
-
-                                            {formatRupiah(
-                                                trx.amount
-                                            )}
+                                            {masuk ? '+' : '-'}
+                                            {formatRupiah(trx.amount)}
                                         </span>
-                                    </Card>
+                                    </li>
                                 );
                             })}
+                        </ul>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2 py-10 text-center">
+                            <Inbox className="h-10 w-10 text-emerald-600" />
+                            <p className="text-lg font-semibold text-slate-700">Belum ada transaksi</p>
+                            <p className="text-base text-slate-500">
+                                Transaksi Anda akan muncul di sini.
+                            </p>
                         </div>
-                    </div>
-                )}
+                    )}
+                </section>
             </div>
 
-            {/* =====================================================
-                ANIMATIONS
-            ====================================================== */}
-
             <style>{`
-                @keyframes ayom-float {
-                    0%, 100% {
-                        transform: translate(0, 0);
-                    }
-
-                    50% {
-                        transform: translate(12px, 16px);
-                    }
-                }
-
                 @keyframes ayom-ping-soft {
-                    0% {
-                        transform: scale(0.9);
-                        opacity: 0.8;
-                    }
-
-                    100% {
-                        transform: scale(1.7);
-                        opacity: 0;
-                    }
+                    0% { transform: scale(0.9); opacity: 0.8; }
+                    100% { transform: scale(1.7); opacity: 0; }
                 }
 
-                .ayom-blob {
-                    animation: ayom-float 9s ease-in-out infinite;
-                }
-
-                .ayom-blob-delay {
-                    animation-delay: 2.5s;
-                }
-
-                .ayom-ping {
-                    animation: ayom-ping-soft 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
-                }
-
-                .ayom-ping-delay {
-                    animation-delay: 0.5s;
-                }
+                .ayom-ping { animation: ayom-ping-soft 1.6s cubic-bezier(0, 0, 0.2, 1) infinite; }
+                .ayom-ping-delay { animation-delay: 0.5s; }
 
                 @media (prefers-reduced-motion: reduce) {
-                    .ayom-blob,
-                    .ayom-ping {
-                        animation: none;
-                    }
+                    .ayom-ping { animation: none; }
                 }
             `}</style>
         </LansiaLayout>

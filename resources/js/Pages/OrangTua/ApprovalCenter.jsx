@@ -3,27 +3,23 @@
 import { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-
-import OrangTuaLayout from '@/Layouts/OrangTuaLayout';
-
-import { Card, CardContent } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-
-import { initials } from '@/lib/ayom-theme';
-
 import { ShieldCheck, Check, X } from 'lucide-react';
 
-const rupiah = (value) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0,
-    }).format(Number(value ?? 0));
-
-const roleLabel = {
-    lansia: 'Lansia',
-    remaja: 'Remaja',
-};
+import OrangTuaLayout from '@/Layouts/OrangTuaLayout';
+import {
+    EmptyState,
+    FlashMessage,
+    Hero,
+    Panel,
+    SHAPE_CARD,
+    SHAPE_CARD_ALT,
+    btnDanger,
+    btnDangerOutline,
+    btnOutline,
+    btnPrimary,
+    roleLabel,
+} from '@/Components/OrangTua/ui';
+import { formatRupiah, initials } from '@/lib/ayom-theme';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 14 },
@@ -34,15 +30,7 @@ const fadeUp = {
     }),
 };
 
-/*
-|--------------------------------------------------------------------------
-| Request Card
-| Catatan warna: kartu ini sengaja tetap pakai palet amber/orange — bukan
-| warna tema — karena fungsinya menandai "butuh perhatian", jadi harus
-| konsisten kebaca sebagai peringatan di peran manapun.
-|--------------------------------------------------------------------------
-*/
-
+/* Palet amber sengaja dipertahankan: kartu ini = "butuh perhatian", bukan warna tema. */
 function RequestCard({ request, index }) {
     const [reason, setReason] = useState('');
     const [showReasonBox, setShowReasonBox] = useState(false);
@@ -71,88 +59,133 @@ function RequestCard({ request, index }) {
 
     return (
         <motion.div variants={fadeUp} initial="hidden" animate="show" custom={index}>
-            <Card className="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
-                <CardContent className="p-5 sm:p-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="flex min-w-0 items-start gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
-                                {initials(requester?.name)}
-                            </div>
+            <article
+                className={`bg-amber-50 p-5 ring-1 ring-amber-200 sm:p-7 ${
+                    index % 2 === 0 ? SHAPE_CARD : SHAPE_CARD_ALT
+                }`}
+            >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-4">
+                        <span
+                            aria-hidden="true"
+                            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-200 text-base font-bold text-amber-950"
+                        >
+                            {initials(requester?.name)}
+                        </span>
 
-                            <div className="min-w-0">
-                                <p className="truncate font-semibold text-slate-900">{requester?.name}</p>
-                                <Badge variant="outline" className="mt-1.5 rounded-full border-amber-200 bg-amber-50 text-amber-700">
-                                    {roleLabel[requester?.role] ?? requester?.role}
-                                </Badge>
-                                <p className="mt-2 text-sm text-slate-500">{trx?.description ?? 'Tanpa keterangan'}</p>
-                            </div>
+                        <div className="min-w-0">
+                            <p className="truncate text-lg font-semibold text-slate-900">
+                                {requester?.name}
+                            </p>
+                            <span className="mt-1 inline-flex rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-900 ring-1 ring-amber-300">
+                                {roleLabel[requester?.role] ?? requester?.role}
+                            </span>
+                            <p className="mt-3 break-words text-base text-slate-700">
+                                {trx?.description ?? 'Tanpa keterangan'}
+                            </p>
                         </div>
-
-                        <p className="shrink-0 text-right text-xl font-bold tabular-nums text-slate-900">{rupiah(trx?.amount)}</p>
                     </div>
 
-                    {showReasonBox && (
+                    <p className="shrink-0 text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        {formatRupiah(trx?.amount)}
+                    </p>
+                </div>
+
+                {showReasonBox && (
+                    <div className="mt-5">
+                        <label htmlFor={`reason-${request.id}`} className="sr-only">
+                            Alasan menolak
+                        </label>
                         <textarea
+                            id={`reason-${request.id}`}
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="Alasan menolak (opsional)"
                             rows={2}
-                            className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-[var(--ayom-primary)] focus:outline-none"
+                            className="w-full rounded-2xl border border-slate-300 bg-white p-4 text-base placeholder:text-slate-500 focus:border-[var(--ayom-primary)] focus:outline-none focus:ring-4 focus:ring-[var(--ayom-primary-line)]"
                         />
-                    )}
-
-                    <div className="mt-5 flex gap-2">
-                        <button
-                            onClick={approve}
-                            disabled={busy}
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--ayom-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--ayom-primary-dark)] active:scale-[0.98] disabled:opacity-50"
-                        >
-                            <Check className="h-4 w-4" /> Setujui
-                        </button>
-
-                        <button
-                            onClick={() => (showReasonBox ? reject() : setShowReasonBox(true))}
-                            disabled={busy}
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 active:scale-[0.98] disabled:opacity-50"
-                        >
-                            <X className="h-4 w-4" /> {showReasonBox ? 'Konfirmasi Tolak' : 'Tolak'}
-                        </button>
                     </div>
-                </CardContent>
-            </Card>
+                )}
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    <button
+                        type="button"
+                        onClick={approve}
+                        disabled={busy}
+                        className={`${btnPrimary} flex-1`}
+                    >
+                        <Check className="h-5 w-5" /> Setujui
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => (showReasonBox ? reject() : setShowReasonBox(true))}
+                        disabled={busy}
+                        className={`${showReasonBox ? btnDanger : btnDangerOutline} flex-1`}
+                    >
+                        <X className="h-5 w-5" /> {showReasonBox ? 'Konfirmasi Tolak' : 'Tolak'}
+                    </button>
+
+                    {showReasonBox && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowReasonBox(false);
+                                setReason('');
+                            }}
+                            disabled={busy}
+                            className={btnOutline}
+                        >
+                            Batal
+                        </button>
+                    )}
+                </div>
+            </article>
         </motion.div>
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Page
-|--------------------------------------------------------------------------
-*/
-
 export default function ApprovalCenter() {
     const { requests = [], flash } = usePage().props;
 
+    const totalNilai = requests.reduce(
+        (sum, r) => sum + Number(r.transaction?.amount ?? 0),
+        0
+    );
+
     return (
-        <OrangTuaLayout title="Approval Center" subtitle="Setujui atau tolak transaksi yang menunggu persetujuan">
+        <OrangTuaLayout
+            title="Approval Center"
+            subtitle="Setujui atau tolak transaksi yang menunggu persetujuan"
+        >
             <Head title="Approval Center" />
 
-            <div className="space-y-6">
-                {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                        {flash.success}
-                    </div>
+            <div className="mx-auto w-full max-w-6xl space-y-6 sm:space-y-8">
+                {requests.length > 0 && (
+                    <Hero>
+                        <p className="text-lg text-white/85">Menunggu keputusan Anda</p>
+                        <p className="mt-1 text-5xl font-extrabold tracking-tight sm:text-6xl">
+                            {requests.length}
+                            <span className="ml-3 text-2xl font-semibold text-white/85 sm:text-3xl">
+                                transaksi
+                            </span>
+                        </p>
+                        <p className="mt-4 text-base text-white/85">
+                            Total nilai {formatRupiah(totalNilai)}
+                        </p>
+                    </Hero>
                 )}
 
+                <FlashMessage type="success">{flash?.success}</FlashMessage>
+
                 {requests.length === 0 ? (
-                    <Card className="rounded-3xl border-dashed border-slate-300 bg-slate-50/60">
-                        <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
-                            <ShieldCheck className="h-10 w-10 text-slate-400" />
-                            <p className="text-sm text-slate-500">Tidak ada transaksi yang menunggu persetujuan saat ini.</p>
-                        </CardContent>
-                    </Card>
+                    <Panel className="py-6">
+                        <EmptyState icon={ShieldCheck}>
+                            Tidak ada transaksi yang menunggu persetujuan saat ini.
+                        </EmptyState>
+                    </Panel>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="grid items-start gap-5 sm:gap-6 lg:grid-cols-2">
                         {requests.map((request, index) => (
                             <RequestCard key={request.id} request={request} index={index} />
                         ))}

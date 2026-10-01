@@ -6,9 +6,20 @@ import { motion } from "framer-motion";
 import axios from "axios";
 
 import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
-import { Card, CardContent } from "@/Components/ui/card";
 import CurrencyInput from "@/Components/ui/currency-input";
-import { Wallet, ArrowUpRight, ArrowRightLeft, Users, Loader2 } from "lucide-react";
+import {
+    FlashMessage,
+    Hero,
+    SHAPE_CARD_ALT,
+    btnPrimary,
+} from "@/Components/OrangTua/ui";
+import {
+    Wallet,
+    ArrowUpRight,
+    ArrowRightLeft,
+    Users,
+    Loader2,
+} from "lucide-react";
 
 const rupiah = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -38,7 +49,7 @@ export default function TopUpLimit() {
 
             if (data.status === "completed") {
                 setStatusMsg("Pembayaran berhasil! Saldo sudah ter-update.");
-                router.reload({ only: ['family', 'recipient'] });
+                router.reload({ only: ["family", "recipient"] });
                 return;
             }
 
@@ -47,10 +58,13 @@ export default function TopUpLimit() {
                 return;
             }
 
-            // Masih pending di sisi Midtrans - coba lagi beberapa kali (kadang butuh
-            // beberapa detik walau popup sudah bilang sukses).
+            // Masih pending di sisi Midtrans - coba lagi beberapa kali
+            // (kadang butuh beberapa detik walau popup sudah bilang sukses).
             if (attempt < 5) {
-                setTimeout(() => verifyAndRefresh(orderId, attempt + 1), 1500);
+                setTimeout(
+                    () => verifyAndRefresh(orderId, attempt + 1),
+                    1500,
+                );
             } else {
                 setStatusMsg(
                     "Pembayaran sedang diproses, silakan cek lagi sebentar.",
@@ -58,7 +72,10 @@ export default function TopUpLimit() {
             }
         } catch (err) {
             if (attempt < 5) {
-                setTimeout(() => verifyAndRefresh(orderId, attempt + 1), 1500);
+                setTimeout(
+                    () => verifyAndRefresh(orderId, attempt + 1),
+                    1500,
+                );
             }
         }
     };
@@ -114,10 +131,13 @@ export default function TopUpLimit() {
         setProcessing(true);
 
         try {
-            const { data } = await axios.post(route("orang-tua.top-up.store"), {
-                amount: Number(amount),
-                recipient_id: null,
-            });
+            const { data } = await axios.post(
+                route("orang-tua.top-up.store"),
+                {
+                    amount: Number(amount),
+                    recipient_id: null,
+                },
+            );
 
             window.snap.pay(data.snap_token, {
                 onSuccess: () => {
@@ -150,116 +170,123 @@ export default function TopUpLimit() {
 
     const isTransfer = Boolean(recipient);
     const submit = isTransfer ? submitTransfer : submitMidtrans;
+    const pageTitle = isTransfer ? "Isi Saldo Anggota" : "Top-up Saldo";
 
     return (
         <OrangTuaLayout
-            title={isTransfer ? "Isi Saldo Anggota" : "Top-up Saldo"}
+            title={pageTitle}
             subtitle={
                 isTransfer
                     ? `Transfer dari saldo keluarga ke ${recipient.name}`
                     : "Isi ulang saldo keluarga secara terpusat"
             }
         >
-            <Head title={isTransfer ? "Isi Saldo Anggota" : "Top-up Saldo"} />
+            <Head title={pageTitle} />
 
-            <div className="mx-auto max-w-xl space-y-6">
-                {flash?.success && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                        {flash.success}
-                    </div>
-                )}
+            <div className="mx-auto w-full max-w-5xl space-y-5 sm:space-y-6">
+                <FlashMessage type="success">
+                    {flash?.success}
+                </FlashMessage>
 
-                {statusMsg && (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                        {statusMsg}
-                    </div>
-                )}
+                <FlashMessage type="success">
+                    {statusMsg}
+                </FlashMessage>
 
-                {errorMsg && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-                        {errorMsg}
-                    </div>
-                )}
+                <FlashMessage type="error">
+                    {errorMsg}
+                </FlashMessage>
 
-                <motion.section
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45, ease: "easeOut" }}
-                    className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--ayom-primary)] via-[var(--ayom-primary)] to-[var(--ayom-primary-dark)] p-6 text-white shadow-xl shadow-slate-200/50 sm:p-8"
-                >
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-white/10"
-                    />
-
-                    <div className="relative z-10">
-                        <p className="flex items-center gap-1.5 text-sm font-medium text-white/80">
-                            <Wallet className="h-4 w-4" />
-                            {recipient
-                                ? `Saldo ${recipient.name}`
-                                : "Saldo Keluarga"}
-                        </p>
-
-                        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                            {rupiah(
-                                recipient
-                                    ? recipient.wallet_balance
-                                    : family?.balance,
-                            )}
-                        </h1>
-
-                        <p className="mt-3 flex items-center gap-1.5 text-sm text-white/80">
-                            <Users className="h-4 w-4" />
-                            {family?.name ?? "Keluarga"} ·{" "}
-                            {family?.members_count ?? 0} anggota
-                        </p>
-
-                        {isTransfer && (
-                            <p className="mt-3 border-t border-white/20 pt-3 text-sm text-white/80">
-                                Sisa saldo keluarga:{" "}
-                                <span className="font-bold text-white">
-                                    {rupiah(family?.balance)}
-                                </span>
+                <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 lg:items-start">
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                            duration: 0.45,
+                            ease: "easeOut",
+                        }}
+                    >
+                        <Hero>
+                            <p className="flex items-center gap-2 text-lg text-white/85">
+                                <Wallet className="h-5 w-5" />
+                                {recipient
+                                    ? `Saldo ${recipient.name}`
+                                    : "Saldo Keluarga"}
                             </p>
-                        )}
-                    </div>
-                </motion.section>
 
-                <Card className="rounded-3xl border-slate-200 shadow-sm">
-                    <CardContent className="p-6">
-                        <h2 className="text-lg font-bold text-slate-900">
-                            {isTransfer ? "Transfer Saldo" : "Isi Ulang Saldo"}
+                            <p className="mt-1 break-words text-4xl font-extrabold tracking-tight tabular-nums sm:text-5xl">
+                                {rupiah(
+                                    recipient
+                                        ? recipient.wallet_balance
+                                        : family?.balance,
+                                )}
+                            </p>
+
+                            <p className="mt-4 flex items-center gap-2 text-base text-white/85">
+                                <Users className="h-5 w-5" />
+                                {family?.name ?? "Keluarga"} ·{" "}
+                                {family?.members_count ?? 0} anggota
+                            </p>
+
+                            {isTransfer && (
+                                <p className="mt-4 border-t border-white/25 pt-4 text-base text-white/85">
+                                    Sisa saldo keluarga:{" "}
+                                    <span className="font-bold text-white">
+                                        {rupiah(family?.balance)}
+                                    </span>
+                                </p>
+                            )}
+                        </Hero>
+                    </motion.div>
+
+                    <div
+                        className={`bg-white p-6 ring-1 ring-slate-200 sm:p-8 ${SHAPE_CARD_ALT}`}
+                    >
+                        <h2 className="font-serif text-2xl text-slate-900 sm:text-3xl">
+                            {isTransfer
+                                ? "Transfer Saldo"
+                                : "Isi Ulang Saldo"}
                         </h2>
-                        <p className="mt-1 text-sm text-slate-500">
+
+                        <p className="mt-2 text-base text-slate-600">
                             {isTransfer
                                 ? `Nominal ini langsung dipotong dari saldo keluarga dan masuk ke wallet ${recipient.name}. Tidak ada pembayaran dari luar.`
                                 : "Masukkan nominal top-up. Kamu akan diarahkan ke halaman pembayaran (VA, e-wallet, atau QRIS)."}
                         </p>
 
-                        <form onSubmit={submit} className="mt-5 space-y-4">
+                        <form
+                            onSubmit={submit}
+                            className="mt-6 space-y-5"
+                        >
                             <div>
                                 <label
                                     htmlFor="amount"
-                                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                                    className="mb-2 block text-base font-medium text-slate-800"
                                 >
                                     Nominal
                                 </label>
+
                                 <CurrencyInput
                                     id="amount"
                                     value={amount}
                                     onChange={setAmount}
                                     placeholder="Contoh: 200.000"
-                                    className="border-slate-200"
+                                    className="h-12 rounded-2xl border-slate-300 text-base"
                                 />
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
+                            <div
+                                role="group"
+                                aria-label="Nominal cepat"
+                                className="flex flex-wrap gap-2"
+                            >
                                 {QUICK_AMOUNTS.map((amt) => (
                                     <button
                                         key={amt}
                                         type="button"
-                                        onClick={() => setAmount(String(amt))}
-                                        className="rounded-full border border-[var(--ayom-primary)]/20 bg-[var(--ayom-primary)]/10 px-3.5 py-1.5 text-xs font-semibold text-[var(--ayom-primary)] transition hover:bg-[var(--ayom-primary)]/15"
+                                        onClick={() =>
+                                            setAmount(String(amt))
+                                        }
+                                        className="cursor-pointer rounded-full border border-[var(--ayom-primary-line)] bg-[var(--ayom-primary-soft)] px-4 py-2 text-base font-semibold text-[var(--ayom-primary)] transition-colors duration-200 hover:bg-[var(--ayom-primary-line)]"
                                     >
                                         {rupiah(amt)}
                                     </button>
@@ -269,30 +296,30 @@ export default function TopUpLimit() {
                             <button
                                 type="submit"
                                 disabled={processing || !amount}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ayom-primary)] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--ayom-primary-dark)] active:scale-[0.98] disabled:opacity-50"
+                                className={`${btnPrimary} h-14 w-full text-lg`}
                             >
                                 {processing ? (
                                     <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <Loader2 className="h-5 w-5 animate-spin" />
                                         {isTransfer
                                             ? "Mentransfer..."
                                             : "Menyiapkan pembayaran..."}
                                     </>
                                 ) : isTransfer ? (
                                     <>
-                                        <ArrowRightLeft className="h-4 w-4" />
+                                        <ArrowRightLeft className="h-5 w-5" />
                                         Transfer ke {recipient.name}
                                     </>
                                 ) : (
                                     <>
-                                        <ArrowUpRight className="h-4 w-4" />
+                                        <ArrowUpRight className="h-5 w-5" />
                                         Top-up Sekarang
                                     </>
                                 )}
                             </button>
                         </form>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </div>
         </OrangTuaLayout>
     );

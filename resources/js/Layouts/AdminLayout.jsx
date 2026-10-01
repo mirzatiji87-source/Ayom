@@ -285,7 +285,7 @@ export default function AdminLayout({
         >
             <Head title={title ?? "Admin"} />
 
-            <div className="mx-auto flex min-h-screen max-w-[1400px]">
+            <div className="mx-auto flex min-h-screen max-w-[1400px] xl:mx-0 xl:max-w-none">
                 {/* Sidebar — desktop */}
                 <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-[var(--ayom-border)] bg-[var(--ayom-surface)] lg:block">
                     <SidebarBody />
@@ -394,9 +394,11 @@ export default function AdminLayout({
                         </div>
                     </header>
 
-                    <main className="flex-1 px-5 py-6">
-                        <FlashBanner />
-                        {children}
+                    <main className="flex-1 px-5 py-6 xl:px-8">
+                        <div className="mx-auto w-full max-w-[1800px]">
+                            <FlashBanner />
+                            {children}
+                        </div>
                     </main>
                 </div>
             </div>

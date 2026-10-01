@@ -1,30 +1,21 @@
+// resources/js/Pages/Remaja/Dashboard.jsx
 import { useEffect, useState } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
-import { motion } from "framer-motion";
 import axios from "axios";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 import RemajaLayout from "@/Layouts/RemajaLayout";
-import { Card, CardContent } from "@/Components/ui/card";
-import { Badge } from "@/Components/ui/badge";
 
 import {
-    Wallet,
     Target,
     Trophy,
-    TrendingDown,
-    ArrowRight,
-    ArrowUpRight,
-    Sparkles,
-    ListChecks,
-    Activity,
     Clock3,
-    PieChart as PieChartIcon,
+    ListChecks,
+    ChevronRight,
+    ArrowDownLeft,
+    ArrowUpRight,
+    Inbox,
 } from "lucide-react";
-
-/* =========================================================
- | HELPERS
- ========================================================= */
 
 const rupiah = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -32,6 +23,22 @@ const rupiah = (value) =>
         currency: "IDR",
         maximumFractionDigits: 0,
     }).format(Number(value ?? 0));
+
+const formatTanggal = () =>
+    new Intl.DateTimeFormat("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    }).format(new Date());
+
+function useSapaan() {
+    const jam = new Date().getHours();
+    if (jam < 11) return "Selamat pagi";
+    if (jam < 15) return "Selamat siang";
+    if (jam < 19) return "Selamat sore";
+    return "Selamat malam";
+}
 
 const statusLabel = {
     completed: "Selesai",
@@ -41,281 +48,62 @@ const statusLabel = {
 };
 
 const statusClass = {
-    completed: "bg-emerald-100 text-emerald-700",
+    completed: "bg-emerald-100 text-emerald-800",
     pending: "bg-amber-100 text-amber-800",
     approved: "bg-blue-100 text-blue-700",
     rejected: "bg-rose-100 text-rose-700",
 };
 
-const CHART_COLORS = [
-    "#059669",
-    "#0d9488",
-    "#f59e0b",
-    "#3b82f6",
-    "#8b5cf6",
-    "#ef4444",
-];
+const CHART_COLORS = ["#059669", "#0d9488", "#f59e0b", "#3b82f6", "#8b5cf6", "#ef4444"];
 
-/* =========================================================
- | ANIMATION
- ========================================================= */
-
-const fadeUp = {
-    hidden: { opacity: 0, y: 12 },
-    show: (index = 0) => ({
-        opacity: 1,
-        y: 0,
-        transition: { delay: index * 0.05, duration: 0.35, ease: "easeOut" },
-    }),
+const LG_COLS = {
+    1: "lg:grid-cols-1",
+    2: "lg:grid-cols-2",
+    3: "lg:grid-cols-3",
+    4: "lg:grid-cols-4",
 };
 
-/* =========================================================
- | BUTTON LINK
- ========================================================= */
-
-function LinkButton({ href, children, className = "", variant = "primary" }) {
-    const variants = {
-        primary: "bg-emerald-600 text-white hover:bg-emerald-700",
-        secondary: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-        outline:
-            "border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50",
-        white: "bg-white text-emerald-700 hover:bg-emerald-50",
-    };
-
-    return (
-        <Link
-            href={href}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${variants[variant]} ${className}`}
-        >
-            {children}
-        </Link>
-    );
-}
-
-/* =========================================================
- | STAT CARD
- ========================================================= */
-
-function StatCard({ icon: Icon, label, value, hint, action, index = 0 }) {
-    return (
-        <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            custom={index}
-            className="h-full"
-        >
-            <Card className="relative h-full overflow-hidden rounded-2xl border-emerald-100/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-100">
-                <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 opacity-70"
-                />
-
-                <CardContent className="relative flex h-full flex-col p-5">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-500">
-                                {label}
-                            </p>
-                            <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">
-                                {value}
-                            </p>
-                        </div>
-
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm shadow-emerald-200">
-                            <Icon className="h-5 w-5 text-white" />
-                        </span>
-                    </div>
-
-                    <div className="mt-auto pt-3">
-                        {action ? (
-                            <Link
-                                href={action.href}
-                                className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
-                            >
-                                {action.label}
-                                <ArrowRight className="h-3.5 w-3.5" />
-                            </Link>
-                        ) : (
-                            <p className="text-xs text-slate-500">{hint}</p>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-        </motion.div>
-    );
-}
-
-/* =========================================================
- | LIMIT BAR
- ========================================================= */
-
-function LimitBar({ label, spent, limit, type = "daily" }) {
-    if (limit === null || limit === undefined || Number(limit) <= 0)
-        return null;
+function LimitBar({ label, spent, limit }) {
+    if (limit === null || limit === undefined || Number(limit) <= 0) return null;
 
     const spentNumber = Number(spent ?? 0);
     const limitNumber = Number(limit);
-    const rawPercentage = (spentNumber / limitNumber) * 100;
-    const percentage = Math.min(100, Math.max(0, rawPercentage));
-    const isOver = rawPercentage > 100;
-    const isNear = rawPercentage >= 80 && rawPercentage <= 100;
+    const raw = (spentNumber / limitNumber) * 100;
+    const pct = Math.min(100, Math.max(0, raw));
+    const isOver = raw > 100;
+    const isNear = raw >= 80 && raw <= 100;
 
-    let trackClass = type === "monthly" ? "bg-teal-100" : "bg-emerald-100";
-    let barClass = type === "monthly" ? "bg-teal-600" : "bg-emerald-600";
-
-    if (isNear) barClass = "bg-amber-500";
-    if (isOver) {
-        trackClass = "bg-rose-100";
-        barClass = "bg-rose-500";
-    }
+    const track = isOver ? "bg-rose-100" : "bg-emerald-100";
+    const bar = isOver ? "bg-rose-500" : isNear ? "bg-amber-500" : "bg-emerald-700";
 
     return (
         <div>
             <div className="mb-1.5 flex items-center justify-between gap-3">
-                <span className="text-xs font-medium text-slate-500">
-                    {label}
-                </span>
+                <span className="text-base text-slate-600">{label}</span>
                 <span
-                    className={`text-xs font-semibold tabular-nums ${isOver ? "text-rose-600" : "text-slate-700"}`}
+                    className={`text-base font-semibold tabular-nums ${
+                        isOver ? "text-rose-600" : "text-slate-800"
+                    }`}
                 >
                     {rupiah(spentNumber)}
-                    <span className="font-normal text-slate-400">
-                        {" "}
-                        / {rupiah(limitNumber)}
-                    </span>
+                    <span className="font-normal text-slate-400"> / {rupiah(limitNumber)}</span>
                 </span>
             </div>
 
-            <div className={`h-2 overflow-hidden rounded-full ${trackClass}`}>
+            <div className={`h-3 overflow-hidden rounded-full ${track}`}>
                 <div
-                    className={`h-full rounded-full transition-all duration-500 ${barClass}`}
-                    style={{ width: `${percentage}%` }}
+                    className={`h-full rounded-full transition-all duration-500 ${bar}`}
+                    style={{ width: `${pct}%` }}
                 />
             </div>
 
-            {isOver && (
-                <p className="mt-1 text-xs font-medium text-rose-600">
-                    Melebihi limit
-                </p>
-            )}
+            {isOver && <p className="mt-1 text-sm font-medium text-rose-600">Melebihi limit</p>}
             {!isOver && isNear && (
-                <p className="mt-1 text-xs font-medium text-amber-600">
-                    Mendekati limit
-                </p>
+                <p className="mt-1 text-sm font-medium text-amber-700">Mendekati limit</p>
             )}
         </div>
     );
 }
-
-/* =========================================================
- | TASK CARD
- ========================================================= */
-
-function TaskCard({ task, index = 0 }) {
-    return (
-        <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            custom={index}
-            className="h-full"
-        >
-            <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-emerald-100/80 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-100">
-                <CardContent className="flex flex-1 flex-col p-5">
-                    <div className="flex items-start gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50">
-                            <Trophy className="h-5 w-5 text-amber-500" />
-                        </span>
-
-                        <div className="min-w-0">
-                            <p className="truncate font-semibold text-slate-900">
-                                {task.title}
-                            </p>
-                            {task.due_date && (
-                                <p className="mt-1 text-xs text-slate-400">
-                                    Tenggat {task.due_date}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="mt-auto flex items-center justify-between pt-5">
-                        <span className="text-sm font-bold tabular-nums text-emerald-700">
-                            {rupiah(task.reward_amount)}
-                        </span>
-
-                        <Badge
-                            variant="outline"
-                            className="rounded-full border-emerald-200 text-emerald-700"
-                        >
-                            Terbuka
-                        </Badge>
-                    </div>
-                </CardContent>
-            </Card>
-        </motion.div>
-    );
-}
-
-/* =========================================================
- | TRANSACTION ITEM
- ========================================================= */
-
-function TransactionItem({ transaction }) {
-    const isIncome = ["topup", "allowance"].includes(transaction.type);
-
-    return (
-        <div className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-emerald-50/40">
-            <div className="flex min-w-0 items-center gap-3">
-                <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                        isIncome ? "bg-emerald-100" : "bg-rose-100"
-                    }`}
-                >
-                    {isIncome ? (
-                        <ArrowUpRight className="h-5 w-5 text-emerald-600" />
-                    ) : (
-                        <TrendingDown className="h-5 w-5 text-rose-600" />
-                    )}
-                </div>
-
-                <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                        {transaction.description || transaction.category}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">
-                        {new Date(transaction.created_at).toLocaleString(
-                            "id-ID",
-                        )}
-                    </p>
-                </div>
-            </div>
-
-            <div className="shrink-0 text-right">
-                <p
-                    className={`text-sm font-bold tabular-nums ${isIncome ? "text-emerald-700" : "text-rose-600"}`}
-                >
-                    {isIncome ? "+" : "-"}
-                    {rupiah(transaction.amount)}
-                </p>
-
-                <span
-                    className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        statusClass[transaction.status] ??
-                        "bg-slate-100 text-slate-600"
-                    }`}
-                >
-                    {statusLabel[transaction.status] ?? transaction.status}
-                </span>
-            </div>
-        </div>
-    );
-}
-
-/* =========================================================
- | DASHBOARD
- ========================================================= */
 
 export default function Dashboard({
     wallet,
@@ -324,6 +112,8 @@ export default function Dashboard({
     recentTransactions = [],
 }) {
     const { auth } = usePage().props;
+    const sapaan = useSapaan();
+
     const [expenseSummary, setExpenseSummary] = useState([]);
     const [loadingChart, setLoadingChart] = useState(true);
 
@@ -335,304 +125,269 @@ export default function Dashboard({
             .finally(() => setLoadingChart(false));
     }, []);
 
+    const adaLimit = wallet?.daily_limit || wallet?.monthly_limit;
+
+    const menu = [
+        { key: "terbuka", label: "Misi Terbuka", value: taskStats?.open ?? 0, icon: Target, href: route("remaja.tasks.index") },
+        { key: "review", label: "Menunggu Review", value: taskStats?.submitted ?? 0, icon: Clock3, href: route("remaja.tasks.index") },
+        { key: "setuju", label: "Misi Disetujui", value: taskStats?.approved ?? 0, icon: ListChecks, href: route("remaja.tasks.index") },
+    ];
+
+    const transaksi = recentTransactions.slice(0, 6);
+
     return (
         <RemajaLayout>
             <Head title="Dashboard" />
 
-            <div className="mx-auto w-full max-w-7xl space-y-6">
-                {/* HERO */}
-                <motion.section
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-600 p-6 text-white shadow-lg shadow-emerald-200 sm:p-8"
-                >
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute -right-10 -top-16 h-52 w-52 rounded-full bg-white/10"
-                    />
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-white/10"
-                    />
+            <div className="mx-auto w-full max-w-6xl space-y-5 sm:space-y-6">
+                {/* BARIS 1: SALDO + LIMIT */}
+                <div className="grid gap-5 sm:gap-6 lg:grid-cols-12">
+                    <section className="relative flex flex-col justify-center overflow-hidden rounded-bl-3xl rounded-br-[3.5rem] rounded-tl-[3.5rem] rounded-tr-3xl bg-emerald-800 px-6 py-8 text-white sm:px-10 sm:py-10 lg:col-span-7">
+                        <svg
+                            aria-hidden="true"
+                            viewBox="0 0 400 400"
+                            className="pointer-events-none absolute -bottom-28 -right-28 h-[24rem] w-[24rem] text-emerald-600/40"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                        >
+                            <circle cx="200" cy="200" r="60" />
+                            <circle cx="200" cy="200" r="110" />
+                            <circle cx="200" cy="200" r="160" />
+                            <circle cx="200" cy="200" r="195" />
+                        </svg>
 
-                    <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="min-w-0">
-                            <p className="flex items-center gap-2 text-sm font-medium text-emerald-50">
-                                <Sparkles className="h-4 w-4" />
-                                Ringkasan hari ini
-                            </p>
+                        <div className="relative min-w-0">
+                            <p className="text-base text-emerald-200">{formatTanggal()}</p>
 
-                            <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-                                Halo,{" "}
-                                {auth?.user?.name?.split(" ")[0] ?? "Remaja"}
+                            <h1 className="mt-1 font-heading text-2xl leading-snug sm:text-3xl">
+                                {sapaan}, {auth?.user?.name?.split(" ")[0] ?? "Remaja"}
                             </h1>
 
-                            <p className="mt-2 text-sm text-emerald-50 sm:text-base">
-                                Saldo saku kamu saat ini{" "}
-                                <span className="font-bold text-white">
-                                    {rupiah(wallet?.balance)}
-                                </span>
+                            <p className="mt-6 text-lg text-emerald-200">Saldo saku kamu</p>
+
+                            <p className="break-words text-5xl font-extrabold tracking-tight sm:text-6xl lg:text-5xl xl:text-6xl">
+                                {rupiah(wallet?.balance)}
                             </p>
+
+                            <Link
+                                href={route("remaja.tasks.index")}
+                                className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-900/50 px-5 py-2.5 text-base text-emerald-100 transition hover:bg-emerald-900/70 sm:text-lg"
+                            >
+                                Cari misi untuk tambah saldo
+                                <ChevronRight className="h-5 w-5" />
+                            </Link>
                         </div>
+                    </section>
 
-                        <LinkButton
-                            href={route("remaja.tasks.index")}
-                            variant="white"
-                            className="w-full sm:w-fit"
-                        >
-                            <Target className="h-4 w-4" />
-                            Lihat Semua Misi
-                        </LinkButton>
-                    </div>
-                </motion.section>
+                    <section className="rounded-bl-[3.5rem] rounded-br-3xl rounded-tl-3xl rounded-tr-[3.5rem] bg-emerald-50 px-6 py-7 ring-1 ring-emerald-900/15 sm:px-10 lg:col-span-5">
+                        <h2 className="font-heading text-2xl text-slate-900">Limit belanja</h2>
 
-                {/* STATISTICS */}
-                <section>
-                    <div className="mb-4">
-                        <h2 className="text-lg font-bold text-slate-900">
-                            Ringkasan
+                        <div className="mt-5 space-y-5">
+                            <LimitBar label="Limit harian" spent={wallet?.daily_spent} limit={wallet?.daily_limit} />
+                            <LimitBar label="Limit bulanan" spent={wallet?.monthly_spent} limit={wallet?.monthly_limit} />
+
+                            {!adaLimit && (
+                                <p className="text-base text-slate-500">
+                                    Belum ada limit yang diatur orang tua.
+                                </p>
+                            )}
+                        </div>
+                    </section>
+                </div>
+
+                {/* BARIS 2: RINGKASAN MISI (gaya menu pil) */}
+                <nav
+                    aria-label="Ringkasan misi"
+                    className={`grid gap-3 sm:grid-cols-2 ${LG_COLS[menu.length]}`}
+                >
+                    {menu.map((item, i) => {
+                        const Icon = item.icon;
+                        const ganjilTerakhir = menu.length % 2 === 1 && i === menu.length - 1;
+
+                        return (
+                            <Link
+                                key={item.key}
+                                href={item.href}
+                                className={`group flex min-h-[4.75rem] items-center gap-4 rounded-full bg-white py-2.5 pl-2.5 pr-6 ring-1 ring-emerald-900/15 transition hover:ring-emerald-700 active:scale-[0.98] ${
+                                    ganjilTerakhir ? "sm:col-span-2 lg:col-span-1" : ""
+                                }`}
+                            >
+                                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-white transition group-hover:bg-emerald-700">
+                                    <Icon className="h-7 w-7" />
+                                </span>
+                                <span className="flex-1 text-lg font-bold leading-tight text-slate-800">
+                                    {item.label}
+                                </span>
+                                <span className="text-3xl font-extrabold tabular-nums text-emerald-800">
+                                    {item.value}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                {/* BARIS 3: GRAFIK + MISI MENDATANG */}
+                <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
+                    <section className="rounded-bl-3xl rounded-br-3xl rounded-tl-3xl rounded-tr-[3.5rem] bg-emerald-50 px-5 py-6 sm:px-10 sm:py-8">
+                        <h2 className="font-heading text-2xl text-slate-900 sm:text-3xl">
+                            Pengeluaran per kategori
                         </h2>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Saldo, misi, dan limit belanjamu
-                        </p>
-                    </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatCard
-                            index={0}
-                            icon={Wallet}
-                            label="Saldo Saku"
-                            value={rupiah(wallet?.balance)}
-                            hint="Saldo yang bisa kamu gunakan"
-                        />
-
-                        <StatCard
-                            index={1}
-                            icon={Target}
-                            label="Misi Terbuka"
-                            value={taskStats?.open ?? 0}
-                            action={{
-                                href: route("remaja.tasks.index"),
-                                label: "Kerjakan misi",
-                            }}
-                        />
-
-                        <StatCard
-                            index={2}
-                            icon={Clock3}
-                            label="Menunggu Review"
-                            value={taskStats?.submitted ?? 0}
-                            hint="Misi yang sudah kamu kirim"
-                        />
-
-                        <StatCard
-                            index={3}
-                            icon={ListChecks}
-                            label="Misi Disetujui"
-                            value={taskStats?.approved ?? 0}
-                            hint="Total misi yang berhasil"
-                        />
-                    </div>
-                </section>
-
-                {/* LIMIT + CHART */}
-                <section className="grid gap-6 xl:grid-cols-2">
-                    <motion.div
-                        variants={fadeUp}
-                        initial="hidden"
-                        animate="show"
-                        custom={0}
-                    >
-                        <Card className="h-full overflow-hidden rounded-2xl border-emerald-100/80 bg-white">
-                            <CardContent className="p-5">
-                                <div className="mb-4 flex items-center gap-2">
-                                    <Wallet className="h-5 w-5 text-emerald-600" />
-                                    <h2 className="text-base font-bold text-slate-900">
-                                        Limit Belanja
-                                    </h2>
-                                </div>
-
-                                <div className="space-y-5">
-                                    <LimitBar
-                                        label="Limit harian"
-                                        spent={wallet?.daily_spent}
-                                        limit={wallet?.daily_limit}
-                                        type="daily"
-                                    />
-                                    <LimitBar
-                                        label="Limit bulanan"
-                                        spent={wallet?.monthly_spent}
-                                        limit={wallet?.monthly_limit}
-                                        type="monthly"
-                                    />
-
-                                    {!wallet?.daily_limit &&
-                                        !wallet?.monthly_limit && (
-                                            <p className="text-sm text-slate-400">
-                                                Belum ada limit yang diatur
-                                                orang tua.
-                                            </p>
-                                        )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-
-                    <motion.div
-                        variants={fadeUp}
-                        initial="hidden"
-                        animate="show"
-                        custom={1}
-                    >
-                        <Card className="h-full overflow-hidden rounded-2xl border-emerald-100/80 bg-white">
-                            <CardContent className="p-5">
-                                <div className="mb-4 flex items-center gap-2">
-                                    <PieChartIcon className="h-5 w-5 text-teal-600" />
-                                    <h2 className="text-base font-bold text-slate-900">
-                                        Pengeluaran per Kategori
-                                    </h2>
-                                </div>
-
-                                {loadingChart ? (
-                                    <p className="text-sm text-slate-400">
-                                        Memuat grafik...
-                                    </p>
-                                ) : expenseSummary.length ? (
-                                    <ResponsiveContainer
-                                        width="100%"
-                                        height={200}
-                                    >
+                        <div className="mt-4">
+                            {loadingChart ? (
+                                <p className="py-10 text-center text-base text-slate-500">Memuat grafik...</p>
+                            ) : expenseSummary.length ? (
+                                <>
+                                    <ResponsiveContainer width="100%" height={200}>
                                         <PieChart>
                                             <Pie
                                                 data={expenseSummary}
                                                 dataKey="total"
                                                 nameKey="category"
-                                                innerRadius={40}
-                                                outerRadius={70}
+                                                innerRadius={45}
+                                                outerRadius={80}
                                                 paddingAngle={2}
                                             >
-                                                {expenseSummary.map(
-                                                    (_, index) => (
-                                                        <Cell
-                                                            key={index}
-                                                            fill={
-                                                                CHART_COLORS[
-                                                                    index %
-                                                                        CHART_COLORS.length
-                                                                ]
-                                                            }
-                                                        />
-                                                    ),
-                                                )}
+                                                {expenseSummary.map((_, index) => (
+                                                    <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                                ))}
                                             </Pie>
-                                            <Tooltip
-                                                formatter={(value) =>
-                                                    rupiah(value)
-                                                }
-                                            />
+                                            <Tooltip formatter={(value) => rupiah(value)} />
                                         </PieChart>
                                     </ResponsiveContainer>
-                                ) : (
-                                    <p className="text-sm text-slate-400">
-                                        Belum ada pengeluaran tercatat.
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                </section>
 
-                {/* UPCOMING TASKS */}
-                <section>
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <Trophy className="h-5 w-5 text-amber-500" />
-                                <h2 className="text-lg font-bold text-slate-900">
-                                    Misi Mendatang
-                                </h2>
-                            </div>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Kerjakan misi untuk dapat reward.
-                            </p>
-                        </div>
-
-                        <Link
-                            href={route("remaja.tasks.index")}
-                            className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
-                        >
-                            Lihat semua misi
-                        </Link>
-                    </div>
-
-                    {upcomingTasks.length === 0 ? (
-                        <Card className="rounded-2xl border-dashed border-emerald-200 bg-emerald-50/40">
-                            <CardContent className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100">
-                                    <Target className="h-7 w-7 text-emerald-600" />
+                                    <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1.5">
+                                        {expenseSummary.map((item, index) => (
+                                            <li key={index} className="flex items-center gap-2 text-base text-slate-700">
+                                                <span
+                                                    className="h-3 w-3 rounded-full"
+                                                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                                                />
+                                                {item.category}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                                    <Inbox className="h-10 w-10 text-emerald-600" />
+                                    <p className="text-lg font-semibold text-slate-700">Belum ada pengeluaran</p>
+                                    <p className="text-base text-slate-500">Grafik muncul setelah kamu belanja.</p>
                                 </div>
-                                <h3 className="mt-4 font-semibold text-slate-900">
-                                    Belum ada misi terbuka
-                                </h3>
-                                <p className="mt-1 max-w-md text-sm text-slate-500">
-                                    Misi baru dari orang tua akan muncul di
-                                    sini.
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {upcomingTasks.map((task, index) => (
-                                <TaskCard
-                                    key={task.id}
-                                    task={task}
-                                    index={index}
-                                />
-                            ))}
+                            )}
                         </div>
-                    )}
-                </section>
+                    </section>
 
-                {/* TRANSACTIONS */}
-                <section>
-                    <div className="mb-4 flex items-end justify-between gap-3">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <Activity className="h-5 w-5 text-emerald-600" />
-                                <h2 className="text-lg font-bold text-slate-900">
-                                    Transaksi Terbaru
-                                </h2>
+                    <section className="rounded-bl-[3.5rem] rounded-br-3xl rounded-tl-3xl rounded-tr-3xl bg-white px-5 py-6 ring-1 ring-emerald-900/15 sm:px-10 sm:py-8">
+                        <div className="mb-2 flex items-end justify-between gap-3">
+                            <h2 className="font-heading text-2xl text-slate-900 sm:text-3xl">Misi mendatang</h2>
+                            <Link
+                                href={route("remaja.tasks.index")}
+                                className="shrink-0 pb-1 text-base font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
+                            >
+                                Lihat semua
+                            </Link>
+                        </div>
+
+                        {upcomingTasks.length === 0 ? (
+                            <div className="flex flex-col items-center gap-2 py-10 text-center">
+                                <Target className="h-10 w-10 text-emerald-600" />
+                                <p className="text-lg font-semibold text-slate-700">Belum ada misi terbuka</p>
+                                <p className="text-base text-slate-500">Misi baru dari orang tua muncul di sini.</p>
                             </div>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Riwayat aktivitas saldomu.
-                            </p>
-                        </div>
+                        ) : (
+                            <ul>
+                                {upcomingTasks.map((task) => (
+                                    <li
+                                        key={task.id}
+                                        className="flex items-center justify-between gap-3 border-b border-emerald-900/10 py-4 last:border-b-0"
+                                    >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                                                <Trophy className="h-6 w-6" />
+                                            </span>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-lg font-semibold text-slate-800">{task.title}</p>
+                                                {task.due_date && (
+                                                    <p className="text-sm text-slate-500">Tenggat {task.due_date}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="shrink-0 text-base font-bold text-emerald-800 sm:text-lg">
+                                            {rupiah(task.reward_amount)}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                </div>
 
+                {/* BARIS 4: TRANSAKSI */}
+                <section className="rounded-bl-3xl rounded-br-3xl rounded-tl-3xl rounded-tr-[3.5rem] bg-emerald-50 px-5 py-6 sm:px-10 sm:py-8">
+                    <div className="mb-2 flex items-end justify-between gap-3">
+                        <h2 className="font-heading text-2xl text-slate-900 sm:text-3xl">Transaksi terakhir</h2>
                         <Link
                             href={route("transactions.index")}
-                            className="shrink-0 text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                            className="shrink-0 pb-1 text-base font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
                         >
                             Lihat semua
                         </Link>
                     </div>
 
-                    <Card className="overflow-hidden rounded-2xl border-emerald-100/80 bg-white">
-                        <CardContent className="divide-y divide-emerald-100/70 p-0">
-                            {recentTransactions.length === 0 ? (
-                                <div className="p-6 text-center text-sm text-slate-400">
-                                    Belum ada riwayat transaksi.
-                                </div>
-                            ) : (
-                                recentTransactions.map((tx) => (
-                                    <TransactionItem
-                                        key={tx.id}
-                                        transaction={tx}
-                                    />
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
+                    {transaksi.length > 0 ? (
+                        <ul className="lg:columns-2 lg:gap-14">
+                            {transaksi.map((trx) => {
+                                const masuk = ["topup", "allowance"].includes(trx.type);
+
+                                return (
+                                    <li
+                                        key={trx.id}
+                                        className="flex break-inside-avoid items-center justify-between gap-3 border-b border-emerald-900/10 py-4"
+                                    >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <span
+                                                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+                                                    masuk ? "bg-emerald-200 text-emerald-900" : "bg-rose-100 text-rose-700"
+                                                }`}
+                                            >
+                                                {masuk ? <ArrowDownLeft className="h-6 w-6" /> : <ArrowUpRight className="h-6 w-6" />}
+                                            </span>
+
+                                            <div className="min-w-0">
+                                                <p className="truncate text-lg font-semibold text-slate-800">
+                                                    {trx.description || trx.category}
+                                                </p>
+                                                <span
+                                                    className={`mt-0.5 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                        statusClass[trx.status] ?? "bg-slate-100 text-slate-600"
+                                                    }`}
+                                                >
+                                                    {statusLabel[trx.status] ?? trx.status}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <span
+                                            className={`shrink-0 text-base font-bold sm:text-lg ${
+                                                masuk ? "text-emerald-800" : "text-rose-700"
+                                            }`}
+                                        >
+                                            {masuk ? "+" : "-"}
+                                            {rupiah(trx.amount)}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2 py-10 text-center">
+                            <Inbox className="h-10 w-10 text-emerald-600" />
+                            <p className="text-lg font-semibold text-slate-700">Belum ada transaksi</p>
+                            <p className="text-base text-slate-500">Transaksimu akan muncul di sini.</p>
+                        </div>
+                    )}
                 </section>
             </div>
         </RemajaLayout>

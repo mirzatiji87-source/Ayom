@@ -1,11 +1,13 @@
+// resources/js/Pages/OrangTua/CreateDependent.jsx
+
 import { useEffect, useState } from "react";
 import { useForm, usePage, router } from "@inertiajs/react";
+import { createPortal } from "react-dom";
+import { CheckCircle2 } from "lucide-react";
+
 import AdminLayout from "@/Layouts/AdminLayout";
 import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
-import { Card, CardContent } from "@/Components/ui/card";
-import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { Label } from "@/Components/ui/label";
 import { DatePicker } from "@/Components/ui/date-picker";
 import CurrencyInput from "@/Components/ui/currency-input";
 import {
@@ -15,56 +17,55 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/Components/ui/select";
-import { createPortal } from "react-dom";
-import { CheckCircle2, X } from "lucide-react";
+import {
+    Field,
+    SHAPE_CARD,
+    SHAPE_CARD_ALT,
+    btnOutline,
+    btnPrimary,
+    inputCls,
+} from "@/Components/OrangTua/ui";
 
-function Field({ label, error, children, hint }) {
-    return (
-        <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-[var(--ayom-ink)]">
-                {label}
-            </Label>
-            {children}
-            {hint && !error ? (
-                <p className="text-xs text-[var(--ayom-muted)]">{hint}</p>
-            ) : null}
-            {error ? (
-                <p className="text-xs text-[var(--ayom-danger)]">{error}</p>
-            ) : null}
-        </div>
-    );
-}
-
-/** Modal sukses - muncul begitu akun berhasil dibuat, biar gak ada keraguan "udah kebuat belum ya". */
 function SuccessModal({ name, onClose, onCreateAnother }) {
     return createPortal(
         <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+            aria-labelledby="success-title"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
         >
-            <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-                    <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-                </div>
+            <div className="w-full max-w-md rounded-bl-3xl rounded-br-3xl rounded-tl-3xl rounded-tr-[3rem] bg-white p-6 text-center shadow-xl sm:p-8">
+                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+                    <CheckCircle2 className="h-9 w-9 text-emerald-700" />
+                </span>
 
-                <h2 className="mt-4 text-lg font-bold text-[var(--ayom-ink)]">
+                <h2
+                    id="success-title"
+                    className="mt-5 font-serif text-2xl leading-snug text-slate-900"
+                >
                     Akun dengan nama "{name}" sudah selesai kamu buat
                 </h2>
-                <p className="mt-1.5 text-sm text-[var(--ayom-muted)]">
+
+                <p className="mt-2 text-base text-slate-600">
                     Akun sudah aktif dan bisa langsung dipakai untuk login.
                 </p>
 
-                <div className="mt-6 flex flex-col gap-2">
-                    <Button
+                <div className="mt-6 flex flex-col gap-3">
+                    <button
+                        type="button"
                         onClick={onClose}
-                        className="bg-[var(--ayom-primary)] hover:bg-[var(--ayom-primary-dark)]"
+                        className={`${btnPrimary} w-full`}
                     >
                         Selesai
-                    </Button>
-                    <Button variant="outline" onClick={onCreateAnother}>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={onCreateAnother}
+                        className={`${btnOutline} w-full`}
+                    >
                         Buat Akun Lain
-                    </Button>
+                    </button>
                 </div>
             </div>
         </div>,
@@ -123,7 +124,7 @@ export default function CreateDependent({ families = [] }) {
     }
 
     return (
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto w-full max-w-3xl">
             {successName && (
                 <SuccessModal
                     name={successName}
@@ -132,214 +133,264 @@ export default function CreateDependent({ families = [] }) {
                 />
             )}
 
-            <Card className="border-[var(--ayom-border)] shadow-none">
-                <CardContent className="p-6">
-                    <p className="text-sm text-[var(--ayom-muted)]">
-                        Buat akun untuk anggota keluarga yang tidak bisa
-                        mendaftar sendiri — orang tua kedua, lansia, atau
-                        remaja. Wallet dengan limit default otomatis dibuat
-                        untuk lansia dan remaja.
-                    </p>
+            <div
+                className={`bg-white p-6 ring-1 ring-slate-200 sm:p-8 ${SHAPE_CARD}`}
+            >
+                <p className="text-base leading-relaxed text-slate-600">
+                    Buat akun untuk anggota keluarga yang tidak bisa mendaftar
+                    sendiri — orang tua kedua, lansia, atau remaja. Wallet
+                    dengan limit default otomatis dibuat untuk lansia dan
+                    remaja.
+                </p>
 
-                    <form onSubmit={submit} className="mt-6 space-y-5">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label="Nama Lengkap" error={errors.name}>
-                                <Input
-                                    value={data.name}
-                                    onChange={(e) =>
-                                        setData("name", e.target.value)
-                                    }
-                                    className="border-[var(--ayom-border)]"
-                                />
-                            </Field>
-                            <Field label="Peran" error={errors.role}>
-                                <Select
-                                    value={data.role}
-                                    onValueChange={(v) => setData("role", v)}
-                                >
-                                    <SelectTrigger className="border-[var(--ayom-border)]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="orang_tua">
-                                            Orang Tua
-                                        </SelectItem>
-                                        <SelectItem value="remaja">
-                                            Remaja
-                                        </SelectItem>
-                                        <SelectItem value="lansia">
-                                            Lansia
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label="Email" error={errors.email}>
-                                <Input
-                                    type="email"
-                                    value={data.email}
-                                    onChange={(e) =>
-                                        setData("email", e.target.value)
-                                    }
-                                    className="border-[var(--ayom-border)]"
-                                />
-                            </Field>
-                            <Field
-                                label="Nomor Telepon"
-                                error={errors.phone}
-                                hint="Opsional"
-                            >
-                                <Input
-                                    value={data.phone}
-                                    onChange={(e) =>
-                                        setData("phone", e.target.value)
-                                    }
-                                    className="border-[var(--ayom-border)]"
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Field label="Kata Sandi" error={errors.password}>
-                                <Input
-                                    type="password"
-                                    value={data.password}
-                                    onChange={(e) =>
-                                        setData("password", e.target.value)
-                                    }
-                                    className="border-[var(--ayom-border)]"
-                                />
-                            </Field>
-                            <Field
-                                label="Konfirmasi Kata Sandi"
-                                error={errors.password_confirmation}
-                            >
-                                <Input
-                                    type="password"
-                                    value={data.password_confirmation}
-                                    onChange={(e) =>
-                                        setData(
-                                            "password_confirmation",
-                                            e.target.value,
-                                        )
-                                    }
-                                    className="border-[var(--ayom-border)]"
-                                />
-                            </Field>
-                        </div>
-
-                        {isAdmin && (
-                            <Field
-                                label="Keluarga"
-                                error={errors.family_id}
-                                hint="Admin memilih keluarga tujuan akun ini"
-                            >
-                                <Select
-                                    value={
-                                        data.family_id
-                                            ? String(data.family_id)
-                                            : ""
-                                    }
-                                    onValueChange={(v) =>
-                                        setData("family_id", v)
-                                    }
-                                >
-                                    <SelectTrigger className="border-[var(--ayom-border)]">
-                                        <SelectValue placeholder="Pilih keluarga…" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {families.map((f) => (
-                                            <SelectItem
-                                                key={f.id}
-                                                value={String(f.id)}
-                                            >
-                                                {f.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        )}
-
+                <form onSubmit={submit} className="mt-8 space-y-6">
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                         <Field
-                            label="Tanggal Lahir"
-                            error={errors.date_of_birth}
-                            hint="Opsional — pilih dari kalender"
+                            label="Nama Lengkap"
+                            htmlFor="name"
+                            error={errors.name}
                         >
-                            <DatePicker
-                                value={data.date_of_birth}
-                                onChange={(val) =>
-                                    setData("date_of_birth", val)
+                            <Input
+                                id="name"
+                                value={data.name}
+                                onChange={(e) =>
+                                    setData("name", e.target.value)
                                 }
-                                className="sm:w-56"
+                                className={inputCls}
                             />
                         </Field>
 
-                        {data.role !== "orang_tua" && (
-                            <div className="rounded-lg border border-[var(--ayom-border)] bg-black/[0.015] p-4">
-                                <p className="text-sm font-medium text-[var(--ayom-ink)]">
-                                    Pengaturan Wallet Awal
-                                </p>
-                                <p className="mt-0.5 text-xs text-[var(--ayom-muted)]">
-                                    Kosongkan untuk memakai nilai default (limit
-                                    harian Rp 50.000, bulanan Rp 1.000.000,
-                                    ambang approval Rp 100.000).
-                                </p>
-                                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                    <Field
-                                        label="Limit Harian"
-                                        error={errors.daily_limit}
-                                    >
-                                        <CurrencyInput
-                                            value={data.daily_limit}
-                                            onChange={(v) =>
-                                                setData("daily_limit", v)
-                                            }
-                                            className="border-[var(--ayom-border)]"
-                                        />
-                                    </Field>
-                                    <Field
-                                        label="Limit Bulanan"
-                                        error={errors.monthly_limit}
-                                    >
-                                        <CurrencyInput
-                                            value={data.monthly_limit}
-                                            onChange={(v) =>
-                                                setData("monthly_limit", v)
-                                            }
-                                            className="border-[var(--ayom-border)]"
-                                        />
-                                    </Field>
-                                    <Field
-                                        label="Ambang Approval"
-                                        error={errors.approval_threshold}
-                                    >
-                                        <CurrencyInput
-                                            value={data.approval_threshold}
-                                            onChange={(v) =>
-                                                setData("approval_threshold", v)
-                                            }
-                                            className="border-[var(--ayom-border)]"
-                                        />
-                                    </Field>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex justify-end pt-2">
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                className="bg-[var(--ayom-primary)] hover:bg-[var(--ayom-primary-dark)]"
+                        <Field
+                            label="Peran"
+                            htmlFor="role"
+                            error={errors.role}
+                        >
+                            <Select
+                                value={data.role}
+                                onValueChange={(v) => setData("role", v)}
                             >
-                                {processing ? "Menyimpan…" : "Buat Akun"}
-                            </Button>
+                                <SelectTrigger
+                                    id="role"
+                                    className={inputCls}
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    <SelectItem value="orang_tua">
+                                        Orang Tua
+                                    </SelectItem>
+                                    <SelectItem value="remaja">
+                                        Remaja
+                                    </SelectItem>
+                                    <SelectItem value="lansia">
+                                        Lansia
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        <Field
+                            label="Email"
+                            htmlFor="email"
+                            error={errors.email}
+                        >
+                            <Input
+                                id="email"
+                                type="email"
+                                value={data.email}
+                                onChange={(e) =>
+                                    setData("email", e.target.value)
+                                }
+                                className={inputCls}
+                            />
+                        </Field>
+
+                        <Field
+                            label="Nomor Telepon"
+                            htmlFor="phone"
+                            error={errors.phone}
+                            hint="Opsional"
+                        >
+                            <Input
+                                id="phone"
+                                type="tel"
+                                value={data.phone}
+                                onChange={(e) =>
+                                    setData("phone", e.target.value)
+                                }
+                                className={inputCls}
+                            />
+                        </Field>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        <Field
+                            label="Kata Sandi"
+                            htmlFor="password"
+                            error={errors.password}
+                        >
+                            <Input
+                                id="password"
+                                type="password"
+                                autoComplete="new-password"
+                                value={data.password}
+                                onChange={(e) =>
+                                    setData("password", e.target.value)
+                                }
+                                className={inputCls}
+                            />
+                        </Field>
+
+                        <Field
+                            label="Konfirmasi Kata Sandi"
+                            htmlFor="password_confirmation"
+                            error={errors.password_confirmation}
+                        >
+                            <Input
+                                id="password_confirmation"
+                                type="password"
+                                autoComplete="new-password"
+                                value={data.password_confirmation}
+                                onChange={(e) =>
+                                    setData(
+                                        "password_confirmation",
+                                        e.target.value,
+                                    )
+                                }
+                                className={inputCls}
+                            />
+                        </Field>
+                    </div>
+
+                    {isAdmin && (
+                        <Field
+                            label="Keluarga"
+                            htmlFor="family_id"
+                            error={errors.family_id}
+                            hint="Admin memilih keluarga tujuan akun ini"
+                        >
+                            <Select
+                                value={
+                                    data.family_id
+                                        ? String(data.family_id)
+                                        : ""
+                                }
+                                onValueChange={(v) =>
+                                    setData("family_id", v)
+                                }
+                            >
+                                <SelectTrigger
+                                    id="family_id"
+                                    className={inputCls}
+                                >
+                                    <SelectValue placeholder="Pilih keluarga…" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {families.map((f) => (
+                                        <SelectItem
+                                            key={f.id}
+                                            value={String(f.id)}
+                                        >
+                                            {f.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    )}
+
+                    <Field
+                        label="Tanggal Lahir"
+                        error={errors.date_of_birth}
+                        hint="Opsional — pilih dari kalender"
+                    >
+                        <DatePicker
+                            value={data.date_of_birth}
+                            onChange={(val) =>
+                                setData("date_of_birth", val)
+                            }
+                            className="sm:w-64"
+                        />
+                    </Field>
+
+                    {data.role !== "orang_tua" && (
+                        <div
+                            className={`bg-slate-50 p-5 ring-1 ring-slate-200 sm:p-6 ${SHAPE_CARD_ALT}`}
+                        >
+                            <p className="font-serif text-xl text-slate-900">
+                                Pengaturan Wallet Awal
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-600">
+                                Kosongkan untuk memakai nilai default (limit
+                                harian Rp 50.000, bulanan Rp 1.000.000, ambang
+                                approval Rp 100.000).
+                            </p>
+
+                            <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+                                <Field
+                                    label="Limit Harian"
+                                    htmlFor="daily_limit"
+                                    error={errors.daily_limit}
+                                >
+                                    <CurrencyInput
+                                        id="daily_limit"
+                                        value={data.daily_limit}
+                                        onChange={(v) =>
+                                            setData("daily_limit", v)
+                                        }
+                                        className={inputCls}
+                                    />
+                                </Field>
+
+                                <Field
+                                    label="Limit Bulanan"
+                                    htmlFor="monthly_limit"
+                                    error={errors.monthly_limit}
+                                >
+                                    <CurrencyInput
+                                        id="monthly_limit"
+                                        value={data.monthly_limit}
+                                        onChange={(v) =>
+                                            setData("monthly_limit", v)
+                                        }
+                                        className={inputCls}
+                                    />
+                                </Field>
+
+                                <Field
+                                    label="Ambang Approval"
+                                    htmlFor="approval_threshold"
+                                    error={errors.approval_threshold}
+                                >
+                                    <CurrencyInput
+                                        id="approval_threshold"
+                                        value={data.approval_threshold}
+                                        onChange={(v) =>
+                                            setData("approval_threshold", v)
+                                        }
+                                        className={inputCls}
+                                    />
+                                </Field>
+                            </div>
                         </div>
-                    </form>
-                </CardContent>
-            </Card>
+                    )}
+
+                    <div className="flex justify-end pt-2">
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className={`${btnPrimary} w-full sm:w-auto`}
+                        >
+                            {processing ? "Menyimpan…" : "Buat Akun"}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }
@@ -347,6 +398,7 @@ export default function CreateDependent({ families = [] }) {
 CreateDependent.layout = (page) => {
     const isAdmin = page.props.auth.user.role === "admin";
     const Layout = isAdmin ? AdminLayout : OrangTuaLayout;
+
     return (
         <Layout
             title="Buat Akun Dependent"
