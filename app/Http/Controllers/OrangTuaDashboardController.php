@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApprovalRequest;
+use App\Models\ContactRequest;
 use App\Models\Task;
 use App\Models\Transaction;
 use App\Models\User;
@@ -22,6 +23,28 @@ class OrangTuaDashboardController extends Controller
             ->firstOrFail();
 
         $familyId = $actor->family_id;
+        $contactRequests = ContactRequest::where('family_id', $familyId)
+            ->whereNull('seen_at')
+            ->with('requester:id,name,phone,role')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(
+                fn(ContactRequest $request) => [
+                    'id' => $request->id,
+                    'created_at' => $request->created_at,
+                    'requester' => $request->requester
+                        ? [
+                            'id' => $request->requester->id,
+                            'name' => $request->requester->name,
+                            'phone' => $request->requester->phone,
+                            'role' => $request->requester->role,
+                        ]
+                        : null,
+                ]
+            );
+
+
 
         // Semua dependent (lansia/remaja) dalam family yang sama
         $members = User::where('family_id', $familyId)
@@ -35,7 +58,7 @@ class OrangTuaDashboardController extends Controller
         $pendingApprovals = ApprovalRequest::pending()
             ->whereHas(
                 'requester',
-                fn ($q) => $q->where('family_id', $familyId)
+                fn($q) => $q->where('family_id', $familyId)
             )
             ->with([
                 'transaction',
@@ -48,7 +71,7 @@ class OrangTuaDashboardController extends Controller
         $pendingApprovalsCount = ApprovalRequest::pending()
             ->whereHas(
                 'requester',
-                fn ($q) => $q->where('family_id', $familyId)
+                fn($q) => $q->where('family_id', $familyId)
             )
             ->count();
 
@@ -92,8 +115,10 @@ class OrangTuaDashboardController extends Controller
                 'members_count' => $family->members_count,
             ],
 
+            'contactRequests' => $contactRequests,
+
             'members' => $members->map(
-                fn (User $member) => [
+                fn(User $member) => [
                     'id' => $member->id,
                     'name' => $member->name,
                     'role' => $member->role,
@@ -115,7 +140,7 @@ class OrangTuaDashboardController extends Controller
                 ->where('role', 'remaja')
                 ->values()
                 ->map(
-                    fn ($m) => [
+                    fn($m) => [
                         'id' => $m->id,
                         'name' => $m->name,
                     ]

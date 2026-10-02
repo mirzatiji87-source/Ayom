@@ -17,8 +17,10 @@ import { formatRupiah, initials } from "@/lib/ayom-theme";
 
 export const SHAPE_HERO =
     "rounded-bl-3xl rounded-br-[3.5rem] rounded-tl-[3.5rem] rounded-tr-3xl";
+
 export const SHAPE_CARD =
     "rounded-bl-3xl rounded-br-3xl rounded-tl-3xl rounded-tr-[3rem]";
+
 export const SHAPE_CARD_ALT =
     "rounded-bl-[3rem] rounded-br-3xl rounded-tl-3xl rounded-tr-3xl";
 
@@ -28,12 +30,20 @@ const BTN =
     "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--ayom-primary-line)] disabled:cursor-not-allowed disabled:opacity-60";
 
 export const btnPrimary = `${BTN} bg-[var(--ayom-primary)] text-white hover:bg-[var(--ayom-primary-dark)]`;
+
 export const btnOutline = `${BTN} border border-slate-300 bg-white text-slate-700 hover:bg-slate-50`;
+
 export const btnDanger = `${BTN} bg-rose-700 text-white hover:bg-rose-800`;
+
 export const btnDangerOutline = `${BTN} border border-rose-300 bg-white text-rose-700 hover:bg-rose-50`;
 
-// Dipasang di <Input>/<SelectTrigger> shadcn: tinggi 48px, teks 16px (tidak memicu zoom di iOS)
+// Dipasang di <Input>/<SelectTrigger> shadcn: tinggi 48px, teks 16px
+// (tidak memicu zoom di iOS)
 export const inputCls = "h-12 rounded-2xl border-slate-300 px-4 text-base";
+
+// Dipakai khusus untuk CurrencyInput yang memiliki prefix "Rp".
+// pl-12 memberi ruang agar angka tidak bertabrakan dengan prefix.
+export const currencyInputCls = `${inputCls} pl-12`;
 
 /* ---------- Label data ---------- */
 
@@ -52,10 +62,22 @@ export const typeLabel = {
 };
 
 const STATUS = {
-    completed: { label: "Selesai", cls: "bg-emerald-100 text-emerald-900" },
-    approved: { label: "Disetujui", cls: "bg-emerald-100 text-emerald-900" },
-    pending: { label: "Menunggu", cls: "bg-amber-100 text-amber-900" },
-    rejected: { label: "Ditolak", cls: "bg-red-100 text-red-800" },
+    completed: {
+        label: "Selesai",
+        cls: "bg-emerald-100 text-emerald-900",
+    },
+    approved: {
+        label: "Disetujui",
+        cls: "bg-emerald-100 text-emerald-900",
+    },
+    pending: {
+        label: "Menunggu",
+        cls: "bg-amber-100 text-amber-900",
+    },
+    rejected: {
+        label: "Ditolak",
+        cls: "bg-red-100 text-red-800",
+    },
 };
 
 export function StatusPill({ status, className = "" }) {
@@ -119,6 +141,7 @@ export function SectionHead({ title, desc, href, linkLabel, action }) {
                 <h2 className="font-serif text-2xl text-slate-900 sm:text-3xl">
                     {title}
                 </h2>
+
                 {desc && (
                     <p className="mt-1 text-sm text-slate-600 sm:text-base">
                         {desc}
@@ -235,6 +258,7 @@ export function LimitBar({
         <div>
             <div className="mb-2 flex items-center justify-between gap-3 text-sm">
                 <span className="text-slate-600">{label}</span>
+
                 <span
                     className={`font-semibold tabular-nums ${
                         isOver ? "text-rose-700" : "text-slate-800"
@@ -294,6 +318,7 @@ export function TrxList({
                                         ? trx.user?.name
                                         : (typeLabel[trx.type] ?? trx.type)}
                                 </p>
+
                                 <p className="mt-0.5 truncate text-base text-slate-600">
                                     {showUser
                                         ? `${typeLabel[trx.type] ?? trx.type} · `
@@ -306,7 +331,11 @@ export function TrxList({
                                 <p className="text-lg font-bold tabular-nums text-slate-900">
                                     {formatRupiah(trx.amount)}
                                 </p>
-                                <StatusPill status={trx.status} className="mt-1" />
+
+                                <StatusPill
+                                    status={trx.status}
+                                    className="mt-1"
+                                />
                             </div>
                         </li>
                     ))}
@@ -326,7 +355,8 @@ export function Pagination({ prevUrl, nextUrl }) {
         >
             {prevUrl ? (
                 <Link href={prevUrl} className={btnOutline}>
-                    <ArrowLeft className="h-5 w-5" /> Sebelumnya
+                    <ArrowLeft className="h-5 w-5" />
+                    Sebelumnya
                 </Link>
             ) : (
                 <span />
@@ -334,7 +364,8 @@ export function Pagination({ prevUrl, nextUrl }) {
 
             {nextUrl ? (
                 <Link href={nextUrl} className={btnOutline}>
-                    Selanjutnya <ArrowRight className="h-5 w-5" />
+                    Selanjutnya
+                    <ArrowRight className="h-5 w-5" />
                 </Link>
             ) : (
                 <span />
@@ -344,18 +375,34 @@ export function Pagination({ prevUrl, nextUrl }) {
 }
 
 /** Field form: label + kontrol + hint/error. */
-export function Field({ label, error, hint, htmlFor, className = "", children }) {
+export function Field({
+    label,
+    error,
+    hint,
+    htmlFor,
+    className = "",
+    children,
+}) {
     return (
         <div className={`space-y-2 ${className}`}>
-            <Label htmlFor={htmlFor} className="text-base font-medium text-slate-800">
+            <Label
+                htmlFor={htmlFor}
+                className="text-base font-medium text-slate-800"
+            >
                 {label}
             </Label>
+
             {children}
+
             {hint && !error ? (
                 <p className="text-sm text-slate-600">{hint}</p>
             ) : null}
+
             {error ? (
-                <p role="alert" className="text-sm font-medium text-[var(--ayom-danger)]">
+                <p
+                    role="alert"
+                    className="text-sm font-medium text-[var(--ayom-danger)]"
+                >
                     {error}
                 </p>
             ) : null}

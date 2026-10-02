@@ -1,3 +1,4 @@
+
 // resources/js/Pages/OrangTua/CreateDependent.jsx
 
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ import {
     btnOutline,
     btnPrimary,
     inputCls,
+    currencyInputCls,
 } from "@/Components/OrangTua/ui";
 
 function SuccessModal({ name, onClose, onCreateAnother }) {
@@ -93,8 +95,9 @@ export default function CreateDependent({ families = [] }) {
         approval_threshold: "",
     });
 
-    // Kalau backend ngirim flash.success dan itu untuk pembuatan akun (bukan aksi lain),
-    // tetap dijaga di sini sebagai fallback, tapi jalur utama pakai onSuccess di bawah.
+    // Kalau backend ngirim flash.success dan itu untuk pembuatan akun
+    // (bukan aksi lain), tetap dijaga di sini sebagai fallback,
+    // tapi jalur utama pakai onSuccess di bawah.
     useEffect(() => {
         if (flash?.success && flash?.createdName) {
             setSuccessName(flash.createdName);
@@ -103,6 +106,7 @@ export default function CreateDependent({ families = [] }) {
 
     function submit(e) {
         e.preventDefault();
+
         const submittedName = data.name;
 
         post(route("dependents.store"), {
@@ -343,7 +347,7 @@ export default function CreateDependent({ families = [] }) {
                                         onChange={(v) =>
                                             setData("daily_limit", v)
                                         }
-                                        className={inputCls}
+                                        className={currencyInputCls}
                                     />
                                 </Field>
 
@@ -358,7 +362,7 @@ export default function CreateDependent({ families = [] }) {
                                         onChange={(v) =>
                                             setData("monthly_limit", v)
                                         }
-                                        className={inputCls}
+                                        className={currencyInputCls}
                                     />
                                 </Field>
 
@@ -373,7 +377,7 @@ export default function CreateDependent({ families = [] }) {
                                         onChange={(v) =>
                                             setData("approval_threshold", v)
                                         }
-                                        className={inputCls}
+                                        className={currencyInputCls}
                                     />
                                 </Field>
                             </div>
@@ -408,3 +412,4 @@ CreateDependent.layout = (page) => {
         </Layout>
     );
 };
+

@@ -1,10 +1,10 @@
 // resources/js/Pages/Lansia/Dashboard.jsx
 
-import { useRef, useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import LansiaLayout from '@/Layouts/LansiaLayout';
-import { Button } from '@/Components/ui/button';
-import { Badge } from '@/Components/ui/badge';
+import { useRef, useState } from "react";
+import { Head, Link, router } from "@inertiajs/react";
+import LansiaLayout from "@/Layouts/LansiaLayout";
+import { Button } from "@/Components/ui/button";
+import { Badge } from "@/Components/ui/badge";
 
 import {
     Mic,
@@ -19,31 +19,31 @@ import {
     ChevronRight,
     ShoppingBag,
     Inbox,
-} from 'lucide-react';
+} from "lucide-react";
 
 const formatRupiah = (value) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
+    new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
         minimumFractionDigits: 0,
     }).format(value ?? 0);
 
 const formatTanggal = () =>
-    new Intl.DateTimeFormat('id-ID', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
+    new Intl.DateTimeFormat("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
     }).format(new Date());
 
 function useSapaan() {
     const jam = new Date().getHours();
 
-    if (jam < 11) return 'Selamat pagi';
-    if (jam < 15) return 'Selamat siang';
-    if (jam < 19) return 'Selamat sore';
+    if (jam < 11) return "Selamat pagi";
+    if (jam < 15) return "Selamat siang";
+    if (jam < 19) return "Selamat sore";
 
-    return 'Selamat malam';
+    return "Selamat malam";
 }
 
 // route() milik Ziggy melempar error kalau nama route tidak ada,
@@ -57,23 +57,23 @@ const safeRoute = (name, params) => {
 };
 
 function ucapkan(teks) {
-    if (!('speechSynthesis' in window)) return;
+    if (!("speechSynthesis" in window)) return;
     const ucapan = new SpeechSynthesisUtterance(teks);
-    ucapan.lang = 'id-ID';
+    ucapan.lang = "id-ID";
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(ucapan);
 }
 
 function useVoiceCommand(onCommand) {
     const [isListening, setIsListening] = useState(false);
-    const [heard, setHeard] = useState('');
+    const [heard, setHeard] = useState("");
 
     const startListening = () => {
         const SpeechRecognition =
             window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            const pesan = 'Maaf, perangkat ini tidak mendukung perintah suara.';
+            const pesan = "Maaf, perangkat ini tidak mendukung perintah suara.";
             setHeard(pesan);
             ucapkan(pesan);
             return;
@@ -81,13 +81,13 @@ function useVoiceCommand(onCommand) {
 
         const recognition = new SpeechRecognition();
 
-        recognition.lang = 'id-ID';
+        recognition.lang = "id-ID";
         recognition.interimResults = false;
         recognition.continuous = false;
 
         recognition.onstart = () => {
             setIsListening(true);
-            setHeard('');
+            setHeard("");
         };
 
         recognition.onresult = (event) => {
@@ -101,10 +101,12 @@ function useVoiceCommand(onCommand) {
 
             const pesan =
                 {
-                    'no-speech': 'Tidak ada suara terdengar. Coba lagi ya.',
-                    'audio-capture': 'Mikrofon tidak ditemukan. Periksa perangkat Anda.',
-                    'not-allowed': 'Izin mikrofon ditolak. Aktifkan izin mikrofon di browser.',
-                }[event.error] || 'Tidak terdengar jelas, coba lagi ya.';
+                    "no-speech": "Tidak ada suara terdengar. Coba lagi ya.",
+                    "audio-capture":
+                        "Mikrofon tidak ditemukan. Periksa perangkat Anda.",
+                    "not-allowed":
+                        "Izin mikrofon ditolak. Aktifkan izin mikrofon di browser.",
+                }[event.error] || "Tidak terdengar jelas, coba lagi ya.";
 
             setHeard(pesan);
             ucapkan(pesan);
@@ -119,10 +121,10 @@ function useVoiceCommand(onCommand) {
 }
 
 const LG_COLS = {
-    1: 'lg:grid-cols-1',
-    2: 'lg:grid-cols-2',
-    3: 'lg:grid-cols-3',
-    4: 'lg:grid-cols-4',
+    1: "lg:grid-cols-1",
+    2: "lg:grid-cols-2",
+    3: "lg:grid-cols-3",
+    4: "lg:grid-cols-4",
 };
 
 export default function Dashboard({
@@ -134,6 +136,7 @@ export default function Dashboard({
 }) {
     const sapaan = useSapaan();
     const saldoRef = useRef(null);
+    const [showCall, setShowCall] = useState(false);
 
     const buka = (nama, pesan) => {
         const url = safeRoute(nama);
@@ -141,56 +144,106 @@ export default function Dashboard({
             ucapkan(pesan);
             router.visit(url);
         } else {
-            ucapkan('Maaf, halaman itu belum tersedia.');
+            ucapkan("Maaf, halaman itu belum tersedia.");
         }
     };
 
+    const hubungiKeluarga = () => {
+        ucapkan("Menghubungi keluarga Anda.");
+
+        router.post(
+            route("lansia.contact-requests.store"),
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onFinish: () => {
+                    const isMobile = /Android|iPhone|iPad|iPod/i.test(
+                        navigator.userAgent,
+                    );
+
+                    if (isMobile) {
+                        window.location.href = `tel:${lansia.family_phone}`;
+                    } else {
+                        setShowCall(true);
+                    }
+                },
+            },
+        );
+    };
+
     const handleCommand = (text) => {
-        if (text.includes('saldo')) {
+        if (text.includes("saldo")) {
             ucapkan(`Saldo Anda saat ini ${formatRupiah(wallet?.balance)}.`);
-            saldoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (text.includes('tagihan') || text.includes('bayar')) {
-            buka('lansia.bills.index', 'Membuka halaman tagihan Anda.');
+            saldoRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            });
+        } else if (text.includes("tagihan") || text.includes("bayar")) {
+            buka("lansia.bills.index", "Membuka halaman tagihan Anda.");
         } else if (
-            text.includes('riwayat') ||
-            text.includes('transaksi') ||
-            text.includes('mutasi')
+            text.includes("riwayat") ||
+            text.includes("transaksi") ||
+            text.includes("mutasi")
         ) {
-            buka('transactions.index', 'Membuka riwayat transaksi Anda.');
-        } else if (text.includes('belanja') || text.includes('checkout')) {
-            buka('lansia.voice-checkout', 'Membuka halaman belanja suara.');
+            buka("transactions.index", "Membuka riwayat transaksi Anda.");
+        } else if (text.includes("belanja") || text.includes("checkout")) {
+            buka("lansia.voice-checkout", "Membuka halaman belanja suara.");
         } else if (
-            text.includes('keluarga') ||
-            text.includes('telepon') ||
-            text.includes('hubungi') ||
-            text.includes('anak')
+            text.includes("keluarga") ||
+            text.includes("telepon") ||
+            text.includes("hubungi") ||
+            text.includes("anak")
         ) {
             if (lansia?.family_phone) {
-                ucapkan('Menghubungi keluarga Anda.');
-                window.location.href = `tel:${lansia.family_phone}`;
+                hubungiKeluarga();
             } else {
-                ucapkan('Maaf, nomor keluarga belum terdaftar.');
+                ucapkan("Maaf, nomor keluarga belum terdaftar.");
             }
         } else {
             ucapkan(
-                'Maaf, saya tidak mengerti. Coba ucapkan: lihat saldo, bayar tagihan, lihat riwayat, atau hubungi keluarga.'
+                "Maaf, saya tidak mengerti. Coba ucapkan: lihat saldo, bayar tagihan, lihat riwayat, atau hubungi keluarga.",
             );
         }
     };
 
-    const { startListening, isListening, heard } = useVoiceCommand(handleCommand);
+    const { startListening, isListening, heard } =
+        useVoiceCommand(handleCommand);
 
     const menu = [
-        { key: 'tagihan', label: 'Tagihan Saya', icon: ReceiptText, href: safeRoute('lansia.bills.index') },
-        { key: 'riwayat', label: 'Riwayat', icon: History, href: safeRoute('transactions.index') },
-        { key: 'belanja', label: 'Belanja Suara', icon: ShoppingBag, href: safeRoute('lansia.voice-checkout') },
+        {
+            key: "tagihan",
+            label: "Tagihan Saya",
+            icon: ReceiptText,
+            href: safeRoute("lansia.bills.index"),
+        },
+        {
+            key: "riwayat",
+            label: "Riwayat",
+            icon: History,
+            href: safeRoute("transactions.index"),
+        },
+        {
+            key: "belanja",
+            label: "Belanja Suara",
+            icon: ShoppingBag,
+            href: safeRoute("lansia.voice-checkout"),
+        },
         ...(lansia?.family_phone
-            ? [{ key: 'keluarga', label: 'Hubungi Keluarga', icon: PhoneCall, href: `tel:${lansia.family_phone}`, external: true }]
+            ? [
+                  {
+                      key: "keluarga",
+                      label: "Hubungi Keluarga",
+                      icon: PhoneCall,
+                      href: "#",
+                      aksi: hubungiKeluarga,
+                  },
+              ]
             : []),
     ].filter((item) => item.href);
 
     const transaksi = (recentTransactions ?? []).slice(0, 6);
-    const urlRiwayat = safeRoute('transactions.index');
+    const urlRiwayat = safeRoute("transactions.index");
 
     return (
         <LansiaLayout user={lansia}>
@@ -205,7 +258,7 @@ export default function Dashboard({
                                 <div className="flex items-center gap-3">
                                     <AlertTriangle className="h-7 w-7 shrink-0 text-amber-700" />
                                     <p className="text-lg font-bold text-amber-950">
-                                        Tagihan {upcomingBill.name} jatuh tempo,{' '}
+                                        Tagihan {upcomingBill.name} jatuh tempo,{" "}
                                         {formatRupiah(upcomingBill.amount)}
                                     </p>
                                 </div>
@@ -214,7 +267,10 @@ export default function Dashboard({
                                     size="lg"
                                     className="h-12 rounded-full bg-amber-700 px-8 text-lg font-bold hover:bg-amber-800"
                                     onClick={() => {
-                                        const url = safeRoute('lansia.bills.pay-now', upcomingBill.id);
+                                        const url = safeRoute(
+                                            "lansia.bills.pay-now",
+                                            upcomingBill.id,
+                                        );
                                         if (url) router.post(url);
                                     }}
                                 >
@@ -227,7 +283,8 @@ export default function Dashboard({
                             <div className="flex items-center gap-3 rounded-3xl bg-amber-50 px-5 py-4 ring-1 ring-amber-200">
                                 <Clock3 className="h-7 w-7 shrink-0 text-amber-700" />
                                 <p className="text-lg font-semibold text-amber-950">
-                                    {pendingApprovals} transaksi menunggu persetujuan keluarga
+                                    {pendingApprovals} transaksi menunggu
+                                    persetujuan keluarga
                                 </p>
                             </div>
                         )}
@@ -255,17 +312,23 @@ export default function Dashboard({
                         </svg>
 
                         <div className="relative min-w-0">
-                            <p className="text-base text-emerald-200">{formatTanggal()}</p>
+                            <p className="text-base text-emerald-200">
+                                {formatTanggal()}
+                            </p>
 
                             <h1 className="mt-1 font-serif text-2xl leading-snug sm:text-3xl">
-                                {sapaan}, {lansia?.name?.split(' ')[0]}
+                                {sapaan}, {lansia?.name?.split(" ")[0]}
                             </h1>
 
                             {lansia?.family_name && (
-                                <p className="text-base text-emerald-200">{lansia.family_name}</p>
+                                <p className="text-base text-emerald-200">
+                                    {lansia.family_name}
+                                </p>
                             )}
 
-                            <p className="mt-6 text-lg text-emerald-200">Saldo Anda</p>
+                            <p className="mt-6 text-lg text-emerald-200">
+                                Saldo Anda
+                            </p>
 
                             <p className="break-words text-5xl font-extrabold tracking-tight sm:text-6xl lg:text-5xl xl:text-6xl">
                                 {formatRupiah(wallet?.balance)}
@@ -276,7 +339,9 @@ export default function Dashboard({
                                     <p className="mt-5 inline-flex flex-wrap items-center gap-x-2 rounded-full bg-emerald-900/50 px-5 py-2.5 text-base text-emerald-100 sm:text-lg">
                                         Boleh dipakai hari ini
                                         <span className="font-bold text-white">
-                                            {formatRupiah(wallet.daily_remaining)}
+                                            {formatRupiah(
+                                                wallet.daily_remaining,
+                                            )}
                                         </span>
                                     </p>
                                 )}
@@ -296,11 +361,15 @@ export default function Dashboard({
                                 type="button"
                                 onClick={startListening}
                                 aria-pressed={isListening}
-                                aria-label={isListening ? 'Sedang mendengarkan' : 'Tekan untuk berbicara'}
+                                aria-label={
+                                    isListening
+                                        ? "Sedang mendengarkan"
+                                        : "Tekan untuk berbicara"
+                                }
                                 className={`relative flex h-full w-full items-center justify-center rounded-full shadow-lg transition-transform duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400 active:scale-95 ${
                                     isListening
-                                        ? 'bg-rose-600 text-white'
-                                        : 'bg-amber-400 text-emerald-900 hover:bg-amber-300'
+                                        ? "bg-rose-600 text-white"
+                                        : "bg-amber-400 text-emerald-900 hover:bg-amber-300"
                                 }`}
                             >
                                 {isListening ? (
@@ -313,14 +382,19 @@ export default function Dashboard({
 
                         <div className="min-w-0 lg:mt-4">
                             <p className="text-xl font-bold text-slate-900">
-                                {isListening ? 'Mendengarkan...' : 'Tekan, lalu bicara'}
+                                {isListening
+                                    ? "Mendengarkan..."
+                                    : "Tekan, lalu bicara"}
                             </p>
 
                             {heard ? (
-                                <p className="mt-1 text-base italic text-slate-600">"{heard}"</p>
+                                <p className="mt-1 text-base italic text-slate-600">
+                                    "{heard}"
+                                </p>
                             ) : (
                                 <p className="mt-1 text-base text-slate-600">
-                                    Coba ucapkan "lihat saldo", "bayar tagihan", atau "hubungi keluarga".
+                                    Coba ucapkan "lihat saldo", "bayar tagihan",
+                                    atau "hubungi keluarga".
                                 </p>
                             )}
                         </div>
@@ -330,14 +404,15 @@ export default function Dashboard({
                 {/* BARIS 2: MENU, satu baris penuh, kolom menyesuaikan jumlah menu */}
                 <nav
                     aria-label="Menu utama"
-                    className={`grid gap-3 sm:grid-cols-2 ${LG_COLS[menu.length] ?? 'lg:grid-cols-1'}`}
+                    className={`grid gap-3 sm:grid-cols-2 ${LG_COLS[menu.length] ?? "lg:grid-cols-1"}`}
                 >
                     {menu.map((item, i) => {
                         const Icon = item.icon;
-                        const ganjilTerakhir = menu.length % 2 === 1 && i === menu.length - 1;
+                        const ganjilTerakhir =
+                            menu.length % 2 === 1 && i === menu.length - 1;
 
                         const cls = `group flex min-h-[4.75rem] items-center gap-4 rounded-full bg-white py-2.5 pl-2.5 pr-5 ring-1 ring-emerald-900/15 transition hover:ring-emerald-700 active:scale-[0.98] ${
-                            ganjilTerakhir ? 'sm:col-span-2 lg:col-span-1' : ''
+                            ganjilTerakhir ? "sm:col-span-2 lg:col-span-1" : ""
                         }`;
 
                         const isi = (
@@ -352,12 +427,21 @@ export default function Dashboard({
                             </>
                         );
 
-                        return item.external ? (
-                            <a key={item.key} href={item.href} className={cls}>
+                        return item.aksi ? (
+                            <button
+                                key={item.key}
+                                type="button"
+                                onClick={item.aksi}
+                                className={`${cls} text-left`}
+                            >
                                 {isi}
-                            </a>
+                            </button>
                         ) : (
-                            <Link key={item.key} href={item.href} className={cls}>
+                            <Link
+                                key={item.key}
+                                href={item.href}
+                                className={cls}
+                            >
                                 {isi}
                             </Link>
                         );
@@ -384,7 +468,9 @@ export default function Dashboard({
                     {transaksi.length > 0 ? (
                         <ul className="lg:columns-2 lg:gap-14">
                             {transaksi.map((trx) => {
-                                const masuk = ['topup', 'allowance'].includes(trx.type);
+                                const masuk = ["topup", "allowance"].includes(
+                                    trx.type,
+                                );
 
                                 return (
                                     <li
@@ -395,8 +481,8 @@ export default function Dashboard({
                                             <span
                                                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
                                                     masuk
-                                                        ? 'bg-emerald-200 text-emerald-900'
-                                                        : 'bg-rose-100 text-rose-700'
+                                                        ? "bg-emerald-200 text-emerald-900"
+                                                        : "bg-rose-100 text-rose-700"
                                                 }`}
                                             >
                                                 {masuk ? (
@@ -408,10 +494,11 @@ export default function Dashboard({
 
                                             <div className="min-w-0">
                                                 <p className="truncate text-lg font-semibold text-slate-800">
-                                                    {trx.description || trx.category}
+                                                    {trx.description ||
+                                                        trx.category}
                                                 </p>
 
-                                                {trx.status === 'pending' && (
+                                                {trx.status === "pending" && (
                                                     <Badge
                                                         variant="outline"
                                                         className="border-amber-300 bg-amber-50 text-amber-800"
@@ -424,10 +511,12 @@ export default function Dashboard({
 
                                         <span
                                             className={`shrink-0 text-base font-bold sm:text-lg ${
-                                                masuk ? 'text-emerald-800' : 'text-rose-700'
+                                                masuk
+                                                    ? "text-emerald-800"
+                                                    : "text-rose-700"
                                             }`}
                                         >
-                                            {masuk ? '+' : '-'}
+                                            {masuk ? "+" : "-"}
                                             {formatRupiah(trx.amount)}
                                         </span>
                                     </li>
@@ -437,7 +526,9 @@ export default function Dashboard({
                     ) : (
                         <div className="flex flex-col items-center gap-2 py-10 text-center">
                             <Inbox className="h-10 w-10 text-emerald-600" />
-                            <p className="text-lg font-semibold text-slate-700">Belum ada transaksi</p>
+                            <p className="text-lg font-semibold text-slate-700">
+                                Belum ada transaksi
+                            </p>
                             <p className="text-base text-slate-500">
                                 Transaksi Anda akan muncul di sini.
                             </p>
@@ -445,6 +536,35 @@ export default function Dashboard({
                     )}
                 </section>
             </div>
+
+            {showCall && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => setShowCall(false)}
+                >
+                    <div
+                        className="w-full max-w-sm rounded-3xl bg-white p-6 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <PhoneCall className="mx-auto h-10 w-10 text-emerald-800" />
+                        <p className="mt-3 text-xl font-bold text-slate-900">
+                            Menghubungi keluarga
+                        </p>
+                        <p className="mt-1 text-2xl font-extrabold tracking-wide text-emerald-800">
+                            {lansia.family_phone}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                            Di HP, panggilan akan langsung tersambung.
+                        </p>
+                        <Button
+                            className="mt-5 h-12 w-full rounded-full text-lg font-bold"
+                            onClick={() => setShowCall(false)}
+                        >
+                            Tutup
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 @keyframes ayom-ping-soft {

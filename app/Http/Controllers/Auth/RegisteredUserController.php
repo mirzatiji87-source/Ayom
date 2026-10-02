@@ -28,18 +28,22 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'phone' => ['required', 'string', 'regex:/^[0-9+\s-]{8,20}$/'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'phone.regex' => 'Nomor HP tidak valid. Gunakan angka saja, contoh 081234567890.',
         ]);
 
         $user = DB::transaction(function () use ($request) {
             $family = Family::create([
-                'name' => 'Keluarga '.$request->name,
+                'name' => 'Keluarga ' . $request->name,
             ]);
 
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
+                'phone' => $request->phone,
                 'password' => Hash::make($request->password),
                 'role' => 'orang_tua',
                 'family_id' => $family->id,

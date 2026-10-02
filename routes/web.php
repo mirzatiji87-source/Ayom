@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\ExpenseChartController;
 use App\Http\Controllers\GuardianViewController;
@@ -62,36 +63,46 @@ Route::middleware('auth')->group(function () {
         Route::put('/tasks/{task}/reject', [TaskController::class, 'reject'])->name('tasks.reject');
     });
 
-    // ---------- ORANG TUA ----------
-    Route::middleware('role:orang_tua')->prefix('orang-tua')->name('orang-tua.')->group(function () {
-        Route::get('/tagihan-saya', [BillController::class, 'myBillsOrangTua'])->name('bills.mine');
-        Route::post('/tagihan-saya/{bill}/bayar', [BillController::class, 'payNow'])->name('bills.pay-now');
-        Route::post('/top-up/verify', [WalletController::class, 'verifyTopUpStatus'])
-            ->name('top-up.verify');
-        Route::get('/dashboard', [OrangTuaDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/guardian-view', [GuardianViewController::class, 'index'])->name('guardian-view');
-        Route::get('/guardian-view/{user}', [GuardianViewController::class, 'show'])->name('guardian-view.show');
+// ---------- ORANG TUA ----------
+Route::middleware('role:orang_tua')->prefix('orang-tua')->name('orang-tua.')->group(function () {
+    Route::get('/tagihan-saya', [BillController::class, 'myBillsOrangTua'])->name('bills.mine');
+    Route::post('/tagihan-saya/{bill}/bayar', [BillController::class, 'payNow'])->name('bills.pay-now');
 
-        Route::get('/top-up', [WalletController::class, 'topUpForm'])->name('top-up.form');
-        Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up.store');
-        Route::get('/misi', [TaskController::class, 'familyIndex'])->name('tasks.index');
+    Route::post('/top-up/verify', [WalletController::class, 'verifyTopUpStatus'])
+        ->name('top-up.verify');
 
-        Route::get('/approval-center', [ApprovalController::class, 'index'])->name('approval-center');
-        Route::get('/approval-center/pending-count', [ApprovalController::class, 'pendingCount'])
-            ->name('approval-center.pending-count');
-        Route::put('/approval-center/{approvalRequest}/approve', [ApprovalController::class, 'approve'])
-            ->name('approval-center.approve');
-        Route::put('/approval-center/{approvalRequest}/reject', [ApprovalController::class, 'reject'])
-            ->name('approval-center.reject');
-    });
+    Route::get('/dashboard', [OrangTuaDashboardController::class, 'index'])->name('dashboard');
+
+    Route::put('/contact-requests/{contactRequest}/seen', [ContactRequestController::class, 'seen'])
+        ->name('contact-requests.seen');
+
+    Route::get('/guardian-view', [GuardianViewController::class, 'index'])->name('guardian-view');
+    Route::get('/guardian-view/{user}', [GuardianViewController::class, 'show'])->name('guardian-view.show');
+
+    Route::get('/top-up', [WalletController::class, 'topUpForm'])->name('top-up.form');
+    Route::post('/top-up', [WalletController::class, 'topUp'])->name('top-up.store');
+    Route::get('/misi', [TaskController::class, 'familyIndex'])->name('tasks.index');
+
+    Route::get('/approval-center', [ApprovalController::class, 'index'])->name('approval-center');
+    Route::get('/approval-center/pending-count', [ApprovalController::class, 'pendingCount'])
+        ->name('approval-center.pending-count');
+    Route::put('/approval-center/{approvalRequest}/approve', [ApprovalController::class, 'approve'])
+        ->name('approval-center.approve');
+    Route::put('/approval-center/{approvalRequest}/reject', [ApprovalController::class, 'reject'])
+        ->name('approval-center.reject');
+});
 
     // ---------- LANSIA ----------
     Route::middleware('role:lansia')->prefix('lansia')->name('lansia.')->group(function () {
         Route::get('/dashboard', [LansiaDashboardController::class, 'index'])->name('dashboard');
+
+        Route::post('/contact-requests', [ContactRequestController::class, 'store'])
+            ->middleware('throttle:6,1')
+            ->name('contact-requests.store');
+
         Route::get('/bills', [BillController::class, 'myBills'])->name('bills.index');
         Route::post('/bills/{bill}/pay-now', [BillController::class, 'payNow'])->name('bills.pay-now');
     });
-
     // ---------- REMAJA ----------
     Route::middleware('role:remaja')->prefix('remaja')->name('remaja.')->group(function () {
         Route::get('/dashboard', [RemajaDashboardController::class, 'index'])->name('dashboard');

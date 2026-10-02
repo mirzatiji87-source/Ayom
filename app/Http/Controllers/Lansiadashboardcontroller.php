@@ -39,11 +39,16 @@ class LansiaDashboardController extends Controller
             ->take(5)
             ->get(['id', 'type', 'category', 'amount', 'description', 'status', 'created_at']);
 
+        $familyPhone = \App\Models\User::where('family_id', $user->family_id)
+            ->where('role', 'orang_tua')
+            ->whereNotNull('phone')
+            ->value('phone');
+
         return Inertia::render('Lansia/Dashboard', [
             'lansia' => [
                 'name' => $user->name,
                 'family_name' => $user->family?->name,
-                'family_phone' => $user->family?->owner?->phone,
+                'family_phone' => $familyPhone ?? $user->family?->owner?->phone,
             ],
             'wallet' => $wallet ? [
                 'balance' => (float) $wallet->balance,

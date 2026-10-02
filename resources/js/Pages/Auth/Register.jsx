@@ -1,120 +1,128 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+// resources/js/Pages/Auth/Register.jsx
+
+import { Head, Link, useForm } from "@inertiajs/react";
+
+import GuestLayout, {
+    Field,
+    PasswordInput,
+    SubmitButton,
+    inputClass,
+} from "@/Layouts/GuestLayout";
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
+        name: "",
+        email: "",
+        phone: "",
+        password: "",
+        password_confirmation: "",
     });
 
     const submit = (e) => {
         e.preventDefault();
 
-        post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
+        post(route("register"), {
+            onFinish: () => reset("password", "password_confirmation"),
         });
     };
 
     return (
-        <GuestLayout>
-            <Head title="Register" />
+        <GuestLayout
+            title="Buat akun keluarga"
+            subtitle="Anda mendaftar sebagai orang tua. Akun lansia dan remaja ditambahkan setelah Anda masuk."
+        >
+            <Head title="Daftar" />
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
-
-                    <TextInput
+            <form onSubmit={submit} className="space-y-5">
+                <Field id="name" label="Nama lengkap" error={errors.name}>
+                    <input
                         id="name"
                         name="name"
                         value={data.name}
-                        className="mt-1 block w-full"
+                        className={inputClass(!!errors.name)}
+                        placeholder="Contoh: Rina Wulandari"
                         autoComplete="name"
-                        isFocused={true}
-                        onChange={(e) => setData('name', e.target.value)}
+                        autoFocus
                         required
+                        onChange={(e) => setData("name", e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.name} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+                <Field id="email" label="Email" error={errors.email}>
+                    <input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        className={inputClass(!!errors.email)}
+                        placeholder="nama@email.com"
                         autoComplete="username"
-                        onChange={(e) => setData('email', e.target.value)}
                         required
+                        onChange={(e) => setData("email", e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.email} className="mt-2" />
-                </div>
+                <Field id="phone" label="Nomor HP" error={errors.phone}>
+                    <input
+                        id="phone"
+                        type="tel"
+                        name="phone"
+                        value={data.phone}
+                        className={inputClass(!!errors.phone)}
+                        placeholder="Contoh: 081234567890"
+                        autoComplete="tel"
+                        inputMode="tel"
+                        required
+                        onChange={(e) => setData("phone", e.target.value)}
+                    />
+                </Field>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+                <Field id="password" label="Kata sandi" error={errors.password}>
+                    <PasswordInput
                         id="password"
-                        type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        error={errors.password}
+                        placeholder="Minimal 8 karakter"
                         autoComplete="new-password"
-                        onChange={(e) => setData('password', e.target.value)}
                         required
+                        onChange={(e) => setData("password", e.target.value)}
                     />
+                </Field>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
+                <Field
+                    id="password_confirmation"
+                    label="Ulangi kata sandi"
+                    error={errors.password_confirmation}
+                >
+                    <PasswordInput
                         id="password_confirmation"
-                        type="password"
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
+                        error={errors.password_confirmation}
+                        placeholder="Ketik ulang kata sandi"
                         autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
                         required
+                        onChange={(e) =>
+                            setData("password_confirmation", e.target.value)
+                        }
                     />
+                </Field>
 
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        Already registered?
-                    </Link>
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Register
-                    </PrimaryButton>
-                </div>
+                <SubmitButton disabled={processing}>
+                    {processing ? "Memproses..." : "Buat akun"}
+                </SubmitButton>
             </form>
+
+            <p className="mt-8 text-center text-sm text-[var(--ayom-muted)]">
+                Sudah punya akun?{" "}
+                <Link
+                    href={route("login")}
+                    className="font-semibold text-[var(--ayom-primary)] hover:underline"
+                >
+                    Masuk
+                </Link>
+            </p>
         </GuestLayout>
     );
 }

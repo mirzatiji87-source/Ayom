@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import { motion } from "framer-motion";
 
 import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
@@ -28,6 +28,8 @@ import {
     Plus,
     ArrowRight,
     ArrowUpRight,
+    PhoneCall,
+    Check,
 } from "lucide-react";
 
 /* ---------- Helpers ---------- */
@@ -44,6 +46,21 @@ const statusVariant = {
     pending: "secondary",
     approved: "default",
     rejected: "destructive",
+};
+const waktuRelatif = (value) => {
+    if (!value) return "";
+
+    const diffMs = Date.now() - new Date(value).getTime();
+    const menit = Math.floor(diffMs / 60000);
+
+    if (menit < 1) return "baru saja";
+    if (menit < 60) return `${menit} menit lalu`;
+
+    const jam = Math.floor(menit / 60);
+    if (jam < 24) return `${jam} jam lalu`;
+
+    const hari = Math.floor(jam / 24);
+    return `${hari} hari lalu`;
 };
 
 const fadeUp = {
@@ -101,9 +118,7 @@ function StatCard({ icon: Icon, label, value, hint, action, index }) {
 
                 <div className="mt-auto min-w-0 pt-5">
                     {action ? (
-                        <CardCta href={action.href}>
-                            {action.label}
-                        </CardCta>
+                        <CardCta href={action.href}>{action.label}</CardCta>
                     ) : (
                         <p className="text-sm leading-relaxed text-slate-600">
                             {hint}
@@ -192,10 +207,7 @@ function MemberCard({ member, index }) {
 
                 <div className="mt-auto flex min-w-0 gap-3 pt-7">
                     <Link
-                        href={route(
-                            "orang-tua.guardian-view.show",
-                            member.id,
-                        )}
+                        href={route("orang-tua.guardian-view.show", member.id)}
                         className="flex min-w-0 flex-1 cursor-pointer items-center justify-center rounded-full bg-[var(--ayom-primary)] px-4 py-3 text-base font-semibold text-white transition-colors duration-200 hover:bg-[var(--ayom-primary-dark)] active:scale-[0.98]"
                     >
                         Lihat Detail
@@ -217,7 +229,6 @@ function MemberCard({ member, index }) {
 
 export default function Dashboard() {
     const { auth } = usePage().props;
-
     const {
         family,
         members = [],
@@ -228,6 +239,7 @@ export default function Dashboard() {
         submittedTasks = [],
         recentTransactions = [],
         monthlyExpense = 0,
+        contactRequests = [],
     } = usePage().props;
 
     return (
@@ -271,8 +283,7 @@ export default function Dashboard() {
 
                             <h1 className="mt-1 font-serif text-3xl leading-snug sm:text-4xl">
                                 Halo,{" "}
-                                {auth?.user?.name?.split(" ")[0] ??
-                                    "Orang Tua"}
+                                {auth?.user?.name?.split(" ")[0] ?? "Orang Tua"}
                             </h1>
 
                             <p className="mt-6 text-lg text-white/85">
@@ -329,6 +340,84 @@ export default function Dashboard() {
                             <ArrowRight className="h-5 w-5 shrink-0" />
                         </Link>
                     </motion.div>
+                )}
+
+                {/* PERMINTAAN DIHUBUNGI */}
+                {contactRequests.length > 0 && (
+                    <div className="space-y-3">
+                        {contactRequests.map((request, index) => {
+                            const requester = request.requester;
+
+                            return (
+                                <motion.div
+                                    key={request.id}
+                                    role="status"
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{
+                                        delay: index * 0.05,
+                                        duration: 0.35,
+                                    }}
+                                    className="flex min-w-0 flex-col gap-4 overflow-hidden rounded-3xl bg-emerald-50 px-5 py-5 ring-1 ring-emerald-200 sm:flex-row sm:items-center sm:justify-between sm:px-7"
+                                >
+                                    <div className="flex min-w-0 items-start gap-4">
+                                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-200 text-emerald-900">
+                                            <PhoneCall className="h-6 w-6" />
+                                        </span>
+
+                                        <div className="min-w-0">
+                                            <p className="break-words text-lg font-bold text-emerald-950">
+                                                {requester?.name ?? "Eyang"}{" "}
+                                                minta dihubungi
+                                            </p>
+
+                                            <p className="mt-0.5 text-sm text-emerald-800">
+                                                {waktuRelatif(
+                                                    request.created_at,
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        {requester?.phone ? (
+                                            <a
+                                                href={`tel:${requester.phone}`}
+                                                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-emerald-700 px-5 py-3 text-base font-bold text-white transition-colors hover:bg-emerald-800 active:scale-[0.97]"
+                                            >
+                                                <PhoneCall className="h-5 w-5" />
+                                                Telepon
+                                            </a>
+                                        ) : (
+                                            <span className="inline-flex items-center justify-center rounded-full bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-600">
+                                                Nomor belum terdaftar
+                                            </span>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                router.put(
+                                                    route(
+                                                        "orang-tua.contact-requests.seen",
+                                                        request.id,
+                                                    ),
+                                                    {},
+                                                    {
+                                                        preserveScroll: true,
+                                                    },
+                                                );
+                                            }}
+                                            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-emerald-300 bg-white px-5 py-3 text-base font-bold text-emerald-900 transition-colors hover:bg-emerald-50 active:scale-[0.97]"
+                                        >
+                                            <Check className="h-5 w-5" />
+                                            Sudah dihubungi
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
                 )}
 
                 {/* RINGKASAN */}
@@ -403,8 +492,8 @@ export default function Dashboard() {
                         >
                             <EmptyState icon={Plus}>
                                 Belum ada akun lansia atau remaja. Tambahkan
-                                anggota keluarga untuk mulai mengatur wallet
-                                dan limit.
+                                anggota keluarga untuk mulai mengatur wallet dan
+                                limit.
                             </EmptyState>
 
                             <div className="flex justify-center pb-4">
@@ -447,9 +536,7 @@ export default function Dashboard() {
                                     className="min-w-0 border-b border-slate-200 last:border-b-0"
                                 >
                                     <Link
-                                        href={route(
-                                            "orang-tua.tasks.index",
-                                        )}
+                                        href={route("orang-tua.tasks.index")}
                                         className="flex min-w-0 cursor-pointer items-center justify-between gap-4 py-4 transition-opacity duration-200 hover:opacity-70"
                                     >
                                         <div className="min-w-0">
@@ -566,9 +653,7 @@ export default function Dashboard() {
                                                     {typeLabel[tx.type] ??
                                                         tx.type}{" "}
                                                     ·{" "}
-                                                    {formatDate(
-                                                        tx.created_at,
-                                                    )}
+                                                    {formatDate(tx.created_at)}
                                                 </p>
                                             </div>
 
