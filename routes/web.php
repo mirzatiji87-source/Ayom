@@ -19,7 +19,7 @@ use Inertia\Inertia;
 
 Route::get('/', fn() => Inertia::render('Welcome'))->name('home');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
 
     // Redirect generik "/dashboard" -> dashboard sesuai role (dipakai default Breeze)
     Route::get('/dashboard', function () {
