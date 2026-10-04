@@ -35,33 +35,32 @@ class UserManagementController extends Controller
         $familyId = $actor->isAdmin() ? $request->family_id : $actor->family_id;
 
         $user = DB::transaction(function () use ($request, $actor, $familyId) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => $request->role,
-                'family_id' => $familyId,
-                'created_by' => $actor->id,
-                'phone' => $request->phone,
-                'date_of_birth' => $request->date_of_birth,
-            ]);
-            $user->forceFill(['email_verified_at' => now()])->save();
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => $request->role,
+        'family_id' => $familyId,
+        'created_by' => $actor->id,
+        'phone' => $request->phone,
+        'date_of_birth' => $request->date_of_birth,
+    ]);
 
-            if ($user->role !== 'orang_tua') {
-                Wallet::create([
-                    'user_id' => $user->id,
-                    'daily_limit' => $request->daily_limit ?? 50000,
-                    'monthly_limit' => $request->monthly_limit ?? 1000000,
-                    'approval_threshold' => $request->approval_threshold ?? 100000,
-                ]);
-            }
+    if ($user->role !== 'orang_tua') {
+        Wallet::create([
+            'user_id' => $user->id,
+            'daily_limit' => $request->daily_limit ?? 50000,
+            'monthly_limit' => $request->monthly_limit ?? 1000000,
+            'approval_threshold' => $request->approval_threshold ?? 100000,
+        ]);
+    }
 
-            ActivityLog::record('create_dependent', $actor, $user, [
-                'role' => $user->role,
-            ]);
+    ActivityLog::record('create_dependent', $actor, $user, [
+        'role' => $user->role,
+    ]);
 
-            return $user;
-        });
+    return $user;
+});
 
         return redirect()->back()->with('success', "Akun {$user->role} untuk {$user->name} berhasil dibuat.");
     }

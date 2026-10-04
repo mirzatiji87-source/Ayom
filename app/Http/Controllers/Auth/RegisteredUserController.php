@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -59,11 +58,7 @@ class RegisteredUserController extends Controller
             return $user;
         });
 
-        try {
-            event(new Registered($user));
-        } catch (\Throwable $e) {
-            Log::error('Gagal kirim email verifikasi', ['error' => $e->getMessage()]);
-        }
+        event(new Registered($user));
 
         Auth::login($user);
 
