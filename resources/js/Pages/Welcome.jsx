@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Head, Link } from "@inertiajs/react";
-import { motion, useReducedMotion } from "framer-motion";
 import "@fontsource-variable/plus-jakarta-sans";
 import {
     ShieldCheck,
@@ -567,21 +566,6 @@ function RoleColumn({ item }) {
 /* -------------------------------------------------------------------------- */
 
 export default function Welcome() {
-    const reduce = useReducedMotion();
-
-    const heroMotion = (delay = 0) =>
-        reduce
-            ? {}
-            : {
-                  initial: { opacity: 0, y: 14 },
-                  animate: { opacity: 1, y: 0 },
-                  transition: {
-                      delay,
-                      duration: 0.55,
-                      ease: "easeOut",
-                  },
-              };
-
     return (
         <>
             <Head title="Ayom - Ekosistem Finansial Keluarga" />
@@ -623,8 +607,8 @@ export default function Welcome() {
                 {/* HERO */}
                 <section className="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-24 pt-10 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
                     <div>
-                        <motion.h1
-                            {...heroMotion(0)}
+                        <h1
+
                             className="text-4xl leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.25rem]"
                             style={{
                                 fontFamily: FONT,
@@ -632,20 +616,20 @@ export default function Welcome() {
                             }}
                         >
                             Eyang belanja sendiri, Anda tetap tenang.
-                        </motion.h1>
+                        </h1>
 
-                        <motion.p
-                            {...heroMotion(0.1)}
+                        <p
+
                             className="mt-6 max-w-lg text-base leading-relaxed text-[var(--ayom-muted)] sm:text-lg"
                         >
                             Ayom adalah wallet keluarga. Lansia belanja dengan
                             suara, orang tua yang menyetujui, remaja belajar
                             mengatur uang lewat misi. Coba sendiri di kartu
                             sebelah, hanya 10 detik.
-                        </motion.p>
+                        </p>
 
-                        <motion.div
-                            {...heroMotion(0.2)}
+                        <div
+
                             className="mt-9 flex flex-col gap-3 sm:flex-row"
                         >
                             <Link
@@ -662,12 +646,12 @@ export default function Welcome() {
                             >
                                 Saya sudah punya akun
                             </Link>
-                        </motion.div>
+                        </div>
                     </div>
 
-                    <motion.div {...heroMotion(0.25)} className="pb-6 lg:pl-6">
+                    <div className="pb-6 lg:pl-6">
                         <InteractiveDemo />
-                    </motion.div>
+                    </div>
                 </section>
 
                 {/* PARTNER */}
