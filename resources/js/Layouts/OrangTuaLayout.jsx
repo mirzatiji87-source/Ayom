@@ -1,12 +1,12 @@
 import BottomNav from "@/Components/OrangTua/BottomNav";
 import RouteLoadingBar from "@/Components/RouteLoadingBar";
 import PageTransition from "@/Components/PageTransition";
-import { useEffect, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import { Head, Link, usePage, router } from "@inertiajs/react";
 import { motion } from "framer-motion";
 import axios from "axios";
-import { Button } from "@/Components/ui/button";
-import { Sheet, SheetContent } from "@/Components/ui/sheet";
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,63 +15,17 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
+
 import { Avatar, AvatarFallback } from "@/Components/ui/avatar";
+
 import { themeVars, initials, useRoleTheme } from "@/lib/ayom-theme";
+
 import { AyomMark } from "@/Layouts/AdminLayout";
 import RolePill from "@/Components/Admin/RolePill";
-import {
-    LayoutDashboard,
-    Eye,
-    ShieldCheck,
-    Wallet,
-    UserPlus,
-    Menu,
-    ChevronDown,
-    LogOut,
-    Settings,
-    ListChecks,
-    Receipt,
-} from "lucide-react";
 
-const NAV_ITEMS = [
-    {
-        label: "Dashboard",
-        routeName: "orang-tua.dashboard",
-        icon: LayoutDashboard,
-    },
-    {
-        label: "Guardian View",
-        routeName: "orang-tua.guardian-view",
-        icon: Eye,
-    },
-    {
-        label: "Approval Center",
-        routeName: "orang-tua.approval-center",
-        icon: ShieldCheck,
-        notifKey: "approval",
-    },
-    {
-        label: "Misi",
-        routeName: "orang-tua.tasks.index",
-        icon: ListChecks,
-        notifKey: "tasks",
-    },
-    {
-        label: "Tagihan Saya",
-        routeName: "orang-tua.bills.mine",
-        icon: Receipt,
-    },
-    {
-        label: "Top-up Saldo",
-        routeName: "orang-tua.top-up.form",
-        icon: Wallet,
-    },
-    {
-        label: "Buat Akun Dependent",
-        routeName: "dependents.create",
-        icon: UserPlus,
-    },
-];
+import { Bell, ChevronDown, LogOut, Settings, X } from "lucide-react";
+
+import { NAV_ITEMS } from "@/Components/OrangTua/nav-items";
 
 const NOTIF_POLL_INTERVAL = 15000;
 
@@ -83,8 +37,10 @@ function isActiveRoute(name) {
     }
 }
 
+/* ---------- Jumlah approval pending ---------- */
+
 function usePendingApprovalCount() {
-    const [count, setCount] = useState(0);
+    const [count, setCount] = useState(null);
 
     useEffect(() => {
         let active = true;
@@ -95,14 +51,20 @@ function usePendingApprovalCount() {
                     route("orang-tua.approval-center.pending-count"),
                 );
 
-                if (active) setCount(data.count ?? 0);
+                if (active) {
+                    setCount(data.count ?? 0);
+                }
             } catch {
-                // Diamkan saja jika ada galat koneksi
+                // Abaikan galat koneksi.
             }
         }
 
         fetchCount();
-        const interval = setInterval(fetchCount, NOTIF_POLL_INTERVAL);
+
+        const interval = setInterval(
+            fetchCount,
+            NOTIF_POLL_INTERVAL,
+        );
 
         return () => {
             active = false;
@@ -112,6 +74,84 @@ function usePendingApprovalCount() {
 
     return count;
 }
+
+/* ---------- Toast notifikasi approval ---------- */
+
+function ApprovalToast({ count }) {
+    const previousCount = useRef(null);
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        if (count === null || count === undefined) {
+            return;
+        }
+
+        if (
+            previousCount.current !== null &&
+            count > previousCount.current
+        ) {
+            setVisible(true);
+        }
+
+        previousCount.current = count;
+    }, [count]);
+
+    useEffect(() => {
+        if (!visible) return undefined;
+
+        const timer = setTimeout(() => {
+            setVisible(false);
+        }, 8000);
+
+        return () => clearTimeout(timer);
+    }, [visible]);
+
+    if (!visible) return null;
+
+    return (
+        <div
+            role="status"
+            aria-live="polite"
+            className="fixed right-4 top-20 z-50 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-lg sm:right-6"
+        >
+            <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-900">
+                    <Bell className="h-5 w-5" />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-amber-950">
+                        Transaksi menunggu persetujuan
+                    </p>
+
+                    <p className="mt-0.5 text-sm text-amber-900">
+                        Ada transaksi anggota yang melewati ambang
+                        approval.
+                    </p>
+
+                    <Link
+                        href={route("orang-tua.approval-center")}
+                        onClick={() => setVisible(false)}
+                        className="mt-2 inline-flex cursor-pointer text-sm font-semibold text-amber-900 underline underline-offset-2 transition-opacity duration-200 hover:opacity-70"
+                    >
+                        Tinjau sekarang
+                    </Link>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={() => setVisible(false)}
+                    aria-label="Tutup notifikasi"
+                    className="cursor-pointer rounded-full p-1 text-amber-900 transition-colors duration-200 hover:bg-amber-100"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+/* ---------- Badge navigasi ---------- */
 
 function NavBadge({ count }) {
     if (!count || count <= 0) return null;
@@ -123,8 +163,12 @@ function NavBadge({ count }) {
     );
 }
 
-function SidebarBody({ onNavigate }) {
-    const pendingApprovalCount = usePendingApprovalCount();
+/* ---------- Sidebar desktop ---------- */
+
+function SidebarBody({
+    onNavigate,
+    pendingApprovalCount = null,
+}) {
     const { pendingTasks = 0 } = usePage().props;
 
     const badgeCounts = {
@@ -194,7 +238,9 @@ function SidebarBody({ onNavigate }) {
                                 {item.label}
                             </span>
 
-                            {badgeCount > 0 && <NavBadge count={badgeCount} />}
+                            {badgeCount > 0 && (
+                                <NavBadge count={badgeCount} />
+                            )}
                         </Link>
                     );
                 })}
@@ -213,6 +259,8 @@ function SidebarBody({ onNavigate }) {
         </div>
     );
 }
+
+/* ---------- Menu profil ---------- */
 
 function ProfileMenu() {
     const { auth } = usePage().props;
@@ -263,7 +311,10 @@ function ProfileMenu() {
                             {user?.email}
                         </span>
 
-                        <RolePill role={user?.role} className="mt-1 w-fit" />
+                        <RolePill
+                            role={user?.role}
+                            className="mt-1 w-fit"
+                        />
                     </div>
                 </DropdownMenuLabel>
 
@@ -288,15 +339,25 @@ function ProfileMenu() {
     );
 }
 
-export default function OrangTuaLayout({ children, title, subtitle }) {
+/* ---------- Layout utama ---------- */
+
+export default function OrangTuaLayout({
+    children,
+    title,
+    subtitle,
+}) {
     useRoleTheme("orang-tua");
 
+    // Hitung approval sekali saja untuk seluruh layout.
+    const pendingApprovalCount = usePendingApprovalCount();
+
     useEffect(() => {
-        // Reset residual body lock yang ditinggalkan Midtrans Snap setelah popup ditutup
+        // Reset body lock sisa popup Midtrans setelah popup ditutup.
         document.body.style.overflow = "";
         document.body.style.position = "";
         document.body.style.top = "";
         document.body.style.width = "";
+
         window.scrollTo(0, 0);
     }, []);
 
@@ -306,6 +367,8 @@ export default function OrangTuaLayout({ children, title, subtitle }) {
             className="min-h-screen bg-[var(--ayom-bg)] text-[var(--ayom-ink)]"
         >
             <RouteLoadingBar />
+
+            <ApprovalToast count={pendingApprovalCount} />
 
             <Head title={title ?? "Orang Tua"} />
 
@@ -320,10 +383,11 @@ export default function OrangTuaLayout({ children, title, subtitle }) {
 
             <div className="mx-auto flex min-h-screen max-w-[1400px]">
                 <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-[var(--ayom-border)] bg-[var(--ayom-surface)] lg:block">
-                    <SidebarBody />
+                    <SidebarBody
+                        pendingApprovalCount={pendingApprovalCount}
+                    />
                 </aside>
 
-                {/* min-w-0 penting: tanpa ini teks panjang melebarkan halaman di HP */}
                 <div className="flex min-h-screen min-w-0 flex-1 flex-col">
                     <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-[var(--ayom-border)] bg-[var(--ayom-surface)] px-4 py-3 shadow-sm sm:px-6 lg:px-8">
                         <div className="min-w-0">
@@ -342,12 +406,16 @@ export default function OrangTuaLayout({ children, title, subtitle }) {
                     </header>
 
                     <main className="min-w-0 w-full max-w-full flex-1 overflow-x-hidden px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-6 lg:px-8 lg:py-8 lg:pb-8">
-                        <PageTransition>{children}</PageTransition>
+                        <PageTransition>
+                            {children}
+                        </PageTransition>
                     </main>
                 </div>
             </div>
 
-            <BottomNav />
+            <BottomNav
+                pendingApprovalCount={pendingApprovalCount}
+            />
         </div>
     );
 }

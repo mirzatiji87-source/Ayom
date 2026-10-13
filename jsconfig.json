@@ -7,4 +7,5 @@
         }
     },
     "exclude": ["node_modules", "public"]
+    
 }

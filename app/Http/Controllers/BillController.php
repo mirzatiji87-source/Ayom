@@ -17,6 +17,15 @@ use Inertia\Response;
 
 class BillController extends Controller
 {
+    /**
+     * Ayom mencatat pembayaran dompet internal sebagai simulasi.
+     * Ini bukan bukti pembayaran kepada penyedia tagihan.
+     */
+    protected const SIMULATION_NOTICE =
+        'Pembayaran simulasi tercatat di dompet Ayom. Tagihan ke penyedia '
+        . '(misalnya BPJS) belum dibayar; pembayaran sungguhan harus '
+        . 'dilakukan melalui kanal resmi.';
+
     public function store(StoreBillRequest $request): RedirectResponse
     {
         $bill = Bill::create(
@@ -25,32 +34,31 @@ class BillController extends Controller
 
         ActivityLog::record('create_bill', Auth::user(), $bill);
 
-        return redirect()->back()->with(
-            'success',
-            'Tagihan berhasil ditambahkan.'
-        );
+        return back()->with('success', 'Tagihan berhasil ditambahkan.');
     }
 
     public function update(
         StoreBillRequest $request,
         Bill $bill
     ): RedirectResponse {
+        $this->authorizeBill($bill);
+
         $bill->update($request->validated());
 
-        return redirect()->back()->with(
-            'success',
-            'Tagihan diperbarui.'
-        );
+        ActivityLog::record('update_bill', Auth::user(), $bill);
+
+        return back()->with('success', 'Tagihan diperbarui.');
     }
 
     public function destroy(Bill $bill): RedirectResponse
     {
+        $this->authorizeBill($bill);
+
         $bill->update(['is_active' => false]);
 
-        return redirect()->back()->with(
-            'success',
-            'Tagihan dinonaktifkan.'
-        );
+        ActivityLog::record('deactivate_bill', Auth::user(), $bill);
+
+        return back()->with('success', 'Tagihan dinonaktifkan.');
     }
 
     public function myBills(): Response
@@ -59,17 +67,35 @@ class BillController extends Controller
         $user = Auth::user();
 
         return Inertia::render('Lansia/BillsReminder', [
-            'bills' => $user->bills()
-                ->where('is_active', true)
-                ->get(),
+            'bills' => $this->present(
+                $user->bills()
+                    ->where('is_active', true)
+                    ->orderBy('next_due_date')
+                    ->get()
+            ),
+            'paymentMode' => 'simulation',
+        ]);
+    }
+
+    public function myBillsOrangTua(): Response
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return Inertia::render('OrangTua/MyBills', [
+            'bills' => $this->present(
+                $user->bills()
+                    ->where('is_active', true)
+                    ->orderBy('next_due_date')
+                    ->get()
+            ),
+            'paymentMode' => 'simulation',
         ]);
     }
 
     /**
-     * Bayar manual sekarang juga.
-     *
-     * Jika nominal tagihan melebihi approval_threshold wallet lansia,
-     * transaksi dibuat pending dan menunggu persetujuan orang tua.
+     * Bayar tagihan melalui simulasi dompet internal Ayom.
+     * Semua pemeriksaan dan pencatatan dilakukan dalam transaksi DB.
      */
     public function payNow(
         Request $request,
@@ -78,33 +104,110 @@ class BillController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        abort_unless($bill->user_id === $user->id, 403);
-
-        $wallet = $user->wallet;
-
         abort_unless(
-            $wallet,
-            422,
-            'Dompet belum tersedia.'
+            (int) $bill->user_id === (int) $user->id,
+            403
         );
 
-        if (!$wallet->hasSufficientBalance((float) $bill->amount)) {
-            return back()->withErrors([
-                'amount' => 'Saldo tidak cukup untuk membayar tagihan ini.',
-            ]);
-        }
+        $result = DB::transaction(function () use ($bill, $user): array {
+            $lockedBill = Bill::query()
+                ->lockForUpdate()
+                ->findOrFail($bill->id);
 
-        if ($wallet->requiresApproval((float) $bill->amount)) {
-            DB::transaction(function () use ($bill, $user) {
-                $transaction = Transaction::create([
-                    'user_id' => $bill->user_id,
+            if ((int) $lockedBill->user_id !== (int) $user->id) {
+                return [
+                    'error' => 'Anda tidak berhak membayar tagihan ini.',
+                ];
+            }
+
+            $blockedReason = $lockedBill->processBlockedReason();
+
+            if ($blockedReason !== null) {
+                return ['error' => $blockedReason];
+            }
+
+            /*
+             * Orang tua tidak punya dompet pribadi:
+             * tagihan dibayar dari saldo keluarga.
+             */
+            if ($user->role === 'orang_tua') {
+                $family = \App\Models\Family::query()
+                    ->lockForUpdate()
+                    ->find($user->family_id);
+
+                if (! $family) {
+                    return [
+                        'error' => 'Data keluarga tidak ditemukan.',
+                    ];
+                }
+
+                $familyAmount = (float) $lockedBill->amount;
+
+                if ((float) $family->balance < $familyAmount) {
+                    return [
+                        'error' => 'Saldo keluarga tidak cukup untuk membayar tagihan ini.',
+                    ];
+                }
+
+                Transaction::create([
+                    'user_id' => $lockedBill->user_id,
                     'family_id' => $user->family_id,
-                    'bill_id' => $bill->id,
+                    'bill_id' => $lockedBill->id,
                     'type' => 'bill_payment',
                     'category' => 'tagihan',
-                    'amount' => $bill->amount,
-                    'description' => $bill->name,
+                    'amount' => $lockedBill->amount,
+                    'description' => $lockedBill->name,
+                    'status' => 'completed',
+                    'payment_mode' => Transaction::MODE_SIMULATION,
+                ]);
+
+                $family->decrement('balance', $familyAmount);
+
+                $lockedBill->markAsPaid();
+
+                ActivityLog::record(
+                    'pay_bill',
+                    $user,
+                    $lockedBill,
+                    [
+                        'payment_mode' => Transaction::MODE_SIMULATION,
+                    ]
+                );
+
+                return ['paid' => true];
+            }
+
+            /*
+             * Pengguna selain orang tua tetap menggunakan dompet
+             * pribadi dan mengikuti aturan approval seperti sebelumnya.
+             */
+            $wallet = $user->wallet()
+                ->lockForUpdate()
+                ->first();
+
+            if (! $wallet) {
+                return ['error' => 'Dompet belum tersedia.'];
+            }
+
+            $amount = (float) $lockedBill->amount;
+
+            if (! $wallet->hasSufficientBalance($amount)) {
+                return [
+                    'error' => 'Saldo tidak cukup untuk membayar tagihan ini.',
+                ];
+            }
+
+            if ($wallet->requiresApproval($amount)) {
+                $transaction = Transaction::create([
+                    'user_id' => $lockedBill->user_id,
+                    'family_id' => $user->family_id,
+                    'bill_id' => $lockedBill->id,
+                    'type' => 'bill_payment',
+                    'category' => 'tagihan',
+                    'amount' => $lockedBill->amount,
+                    'description' => $lockedBill->name,
                     'status' => 'pending',
+                    'payment_mode' => Transaction::MODE_SIMULATION,
                 ]);
 
                 ApprovalRequest::create([
@@ -116,54 +219,95 @@ class BillController extends Controller
                 ActivityLog::record(
                     'request_bill_payment_approval',
                     $user,
-                    $bill
+                    $lockedBill,
+                    [
+                        'payment_mode' => Transaction::MODE_SIMULATION,
+                    ]
                 );
-            });
 
-            return redirect()->back()->with(
-                'success',
-                'Nominal ini di atas batas normal - menunggu persetujuan orang tua terlebih dahulu.'
-            );
-        }
+                return ['pending_approval' => true];
+            }
 
-        DB::transaction(function () use ($bill, $wallet, $user) {
             Transaction::create([
-                'user_id' => $bill->user_id,
+                'user_id' => $lockedBill->user_id,
                 'family_id' => $user->family_id,
-                'bill_id' => $bill->id,
+                'bill_id' => $lockedBill->id,
                 'type' => 'bill_payment',
                 'category' => 'tagihan',
-                'amount' => $bill->amount,
-                'description' => $bill->name,
+                'amount' => $lockedBill->amount,
+                'description' => $lockedBill->name,
                 'status' => 'completed',
+                'payment_mode' => Transaction::MODE_SIMULATION,
             ]);
 
-            $wallet->recordSpending((float) $bill->amount);
-            $bill->markAsPaid();
+            $wallet->recordSpending($amount);
+
+            $lockedBill->markAsPaid();
 
             ActivityLog::record(
                 'pay_bill',
                 $user,
-                $bill
+                $lockedBill,
+                [
+                    'payment_mode' => Transaction::MODE_SIMULATION,
+                ]
             );
+
+            return ['paid' => true];
         });
 
-        return redirect()->back()->with(
-            'success',
-            'Tagihan berhasil dibayar.'
+        if (isset($result['error'])) {
+            return back()->withErrors([
+                'amount' => $result['error'],
+            ]);
+        }
+
+        if (! empty($result['pending_approval'])) {
+            return back()->with(
+                'success',
+                'Permintaan pembayaran simulasi menunggu persetujuan orang tua.'
+            );
+        }
+
+        return back()->with('success', self::SIMULATION_NOTICE);
+    }
+
+    // ================= INTERNAL =================
+
+    protected function authorizeBill(Bill $bill): void
+    {
+        /** @var User $actor */
+        $actor = Auth::user();
+
+        $bill->loadMissing('user');
+
+        abort_unless(
+            $actor
+                && $bill->user
+                && (
+                    $actor->isAdmin()
+                    || $actor->isGuardianOf($bill->user)
+                ),
+            403,
+            'Anda tidak berhak mengelola tagihan ini.'
         );
     }
 
-    public function myBillsOrangTua(): Response
+    /**
+     * Sertakan data pembayaran terakhir dan alasan jika tagihan diblokir.
+     */
+    protected function present($bills)
     {
-        /** @var User $user */
-        $user = Auth::user();
-
-        return Inertia::render('OrangTua/MyBills', [
-            'bills' => $user->bills()
-                ->where('is_active', true)
-                ->orderBy('next_due_date')
-                ->get(),
+        $bills->load([
+            'user:id,name,life_status',
+            'latestPayment',
         ]);
+
+        return $bills->each(function (Bill $bill): void {
+            $bill->setAttribute(
+                'blocked_reason',
+                $bill->processBlockedReason()
+            );
+        });
     }
 }

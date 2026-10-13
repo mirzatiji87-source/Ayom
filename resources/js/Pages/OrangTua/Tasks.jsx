@@ -168,7 +168,7 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                     <div
                         role="tablist"
                         aria-label="Filter misi"
-                        className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+                        className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
                     >
                         {FILTERS.map((item) => {
                             const active = filter === item.value;
@@ -180,7 +180,11 @@ export default function Tasks({ tasks = [], dependents = [] }) {
                                     role="tab"
                                     aria-selected={active}
                                     onClick={() => setFilter(item.value)}
-                                    className={`inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2.5 text-base font-semibold transition-colors duration-200 ${
+                                    className={`flex min-w-0 cursor-pointer items-center justify-between gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200 sm:inline-flex sm:justify-start sm:text-base ${
+                                        item.value === "all"
+                                            ? "col-span-2 sm:col-span-1"
+                                            : ""
+                                    } ${
                                         active
                                             ? "bg-[var(--ayom-primary)] text-white"
                                             : "bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"

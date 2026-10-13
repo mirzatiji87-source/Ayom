@@ -1,35 +1,27 @@
-import { useState } from "react";
-import { Head, Link, useForm, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 
 import RemajaLayout from "@/Layouts/RemajaLayout";
 import LansiaLayout from "@/Layouts/LansiaLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
-import { Badge } from "@/Components/ui/badge";
-import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
-import { Label } from "@/Components/ui/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/Components/ui/select";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogFooter,
-} from "@/Components/ui/dialog";
-import { Plus } from "lucide-react";
+    ArrowDownLeft,
+    Bus,
+    Clapperboard,
+    GraduationCap,
+    HeartPulse,
+    Package,
+    Plus,
+    Receipt,
+    Shirt,
+    ShoppingBag,
+    ShoppingBasket,
+    UtensilsCrossed,
+    Wallet,
+} from "lucide-react";
 
-// NOTE: halaman ini dipakai bersama oleh role `lansia` & `remaja` (route `transactions.index`).
-// Layout dipilih dinamis lewat Transactions.layout di bawah, berdasarkan auth.user.role.
-// Ukuran teks & tombol JUGA menyesuaikan role (lihat prop `isLansia` yang dioper ke
-// setiap sub-komponen) supaya untuk Lansia tampil besar & kontras tinggi, konsisten
-// dengan gaya di BillsReminder.jsx — bukan cuma layout-nya yang beda, isinya juga.
+// Halaman ini dipakai bersama oleh role lansia dan remaja
+// melalui route transactions.index.
+// Keduanya memakai daftar transaksi yang sama (TransactionList),
+// bedanya lansia memakai ukuran huruf & tap target lebih besar (prop `large`).
 
 function formatRupiah(value) {
     return new Intl.NumberFormat("id-ID", {
@@ -46,194 +38,390 @@ const CATEGORY_OPTIONS = [
     { value: "tagihan", label: "Tagihan" },
     { value: "kesehatan", label: "Kesehatan" },
     { value: "pendidikan", label: "Pendidikan" },
+    { value: "pakaian", label: "Pakaian" },
+    { value: "belanja", label: "Belanja harian" },
     { value: "lainnya", label: "Lainnya" },
 ];
 
+const CATEGORY_ICON = {
+    makanan: UtensilsCrossed,
+    transportasi: Bus,
+    hiburan: Clapperboard,
+    tagihan: Receipt,
+    pakaian: Shirt,
+    belanja: ShoppingBasket,
+    pendidikan: GraduationCap,
+    kesehatan: HeartPulse,
+    lainnya: Package,
+};
+
 const TYPE_META = {
-    topup: {
-        label: "Top-up",
-        sign: "+",
-        className: "bg-green-100 text-green-700",
-    },
-    expense: {
-        label: "Pengeluaran",
-        sign: "-",
-        className: "bg-red-100 text-red-700",
-    },
-    transfer: {
-        label: "Transfer",
-        sign: "-",
-        className: "bg-blue-100 text-blue-700",
-    },
-    bill_payment: {
-        label: "Tagihan",
-        sign: "-",
-        className: "bg-orange-100 text-orange-700",
-    },
-    allowance: {
-        label: "Uang Saku",
-        sign: "+",
-        className: "bg-emerald-100 text-emerald-700",
-    },
+    topup: { label: "Top-up", sign: "+" },
+    expense: { label: "Pengeluaran", sign: "-" },
+    transfer: { label: "Transfer", sign: "-" },
+    bill_payment: { label: "Tagihan", sign: "-" },
+    allowance: { label: "Uang Saku", sign: "+" },
 };
 
 const STATUS_META = {
-    completed: { label: "Selesai", className: "bg-green-100 text-green-700" },
-    pending: { label: "Menunggu", className: "bg-amber-100 text-amber-700" },
-    approved: { label: "Disetujui", className: "bg-green-100 text-green-700" },
-    rejected: { label: "Ditolak", className: "bg-red-100 text-red-700" },
+    completed: {
+        label: "Selesai",
+        className: "bg-green-100 text-green-700",
+    },
+    pending: {
+        label: "Menunggu",
+        className: "bg-amber-100 text-amber-700",
+    },
+    approved: {
+        label: "Disetujui",
+        className: "bg-green-100 text-green-700",
+    },
+    rejected: {
+        label: "Ditolak",
+        className: "bg-red-100 text-red-700",
+    },
 };
 
-function TypeBadge({ type, isLansia }) {
-    const meta = TYPE_META[type] ?? {
-        label: type,
-        sign: "",
-        className: "bg-slate-100 text-slate-600",
-    };
-    return (
-        <Badge className={`${meta.className} ${isLansia ? "px-3 py-1 text-base" : ""}`}>
-            {meta.label}
-        </Badge>
-    );
+/* ---------- Helper tanggal ---------- */
+
+function dayLabel(iso) {
+    const d = new Date(iso);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return "Hari ini";
+    if (d.toDateString() === yesterday.toDateString()) return "Kemarin";
+
+    return d.toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+    });
 }
 
-function StatusBadge({ status, isLansia }) {
-    const meta = STATUS_META[status] ?? {
-        label: status,
-        className: "bg-slate-100 text-slate-600",
-    };
-    return (
-        <Badge className={`${meta.className} ${isLansia ? "px-3 py-1 text-base" : ""}`}>
-            {meta.label}
-        </Badge>
-    );
+function timeLabel(iso) {
+    return new Date(iso)
+        .toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+        .replace(".", ":");
 }
 
-function NewExpenseDialog({ isLansia }) {
-    const [open, setOpen] = useState(false);
-    const { data, setData, post, processing, errors, reset } = useForm({
-        amount: "",
-        category: "",
-        description: "",
+// Kelompokkan per hari, urutan dari server dipertahankan.
+function groupByDay(rows) {
+    const map = new Map();
+
+    rows.forEach((trx) => {
+        const key = new Date(trx.created_at).toDateString();
+        if (!map.has(key)) {
+            map.set(key, { label: dayLabel(trx.created_at), items: [] });
+        }
+        map.get(key).items.push(trx);
     });
 
-    function handleSubmit(e) {
-        e.preventDefault();
-        post(route("transactions.store"), {
-            preserveScroll: true,
-            onSuccess: () => {
-                reset();
-                setOpen(false);
-            },
-        });
-    }
+    return [...map.values()];
+}
+
+/* ---------- Pagination (dipakai dua role) ---------- */
+
+function Pagination({ links, large }) {
+    if (links.length <= 3) return null;
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className={isLansia ? "h-14 px-6 text-xl" : ""}>
-                    <Plus className={isLansia ? "mr-2 h-6 w-6" : "mr-1 h-4 w-4"} />
-                    Catat Pengeluaran
-                </Button>
-            </DialogTrigger>
-            <DialogContent className={isLansia ? "sm:max-w-lg" : ""}>
-                <DialogHeader>
-                    <DialogTitle className={isLansia ? "text-2xl" : ""}>
-                        Catat Pengeluaran Baru
-                    </DialogTitle>
-                </DialogHeader>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-1.5">
-                        <Label htmlFor="amount" className={isLansia ? "text-lg" : ""}>
-                            Jumlah (Rp)
-                        </Label>
-                        <Input
-                            id="amount"
-                            type="number"
-                            min="1"
-                            step="1"
-                            value={data.amount}
-                            onChange={(e) => setData("amount", e.target.value)}
-                            placeholder="contoh: 25000"
-                            className={isLansia ? "h-14 text-xl" : ""}
-                        />
-                        {errors.amount && (
-                            <p className={`text-red-500 ${isLansia ? "text-base" : "text-xs"}`}>
-                                {errors.amount}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <Label htmlFor="category" className={isLansia ? "text-lg" : ""}>
-                            Kategori
-                        </Label>
-                        <Select
-                            value={data.category}
-                            onValueChange={(v) => setData("category", v)}
-                        >
-                            <SelectTrigger id="category" className={isLansia ? "h-14 text-xl" : ""}>
-                                <SelectValue placeholder="Pilih kategori" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {CATEGORY_OPTIONS.map((opt) => (
-                                    <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        className={isLansia ? "text-lg" : ""}
-                                    >
-                                        {opt.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {errors.category && (
-                            <p className={`text-red-500 ${isLansia ? "text-base" : "text-xs"}`}>
-                                {errors.category}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <Label htmlFor="description" className={isLansia ? "text-lg" : ""}>
-                            Catatan (opsional)
-                        </Label>
-                        <Input
-                            id="description"
-                            value={data.description}
-                            onChange={(e) =>
-                                setData("description", e.target.value)
-                            }
-                            placeholder="contoh: Makan siang di kantin"
-                            maxLength={255}
-                            className={isLansia ? "h-14 text-xl" : ""}
-                        />
-                        {errors.description && (
-                            <p className={`text-red-500 ${isLansia ? "text-base" : "text-xs"}`}>
-                                {errors.description}
-                            </p>
-                        )}
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                            className={`w-full ${isLansia ? "h-14 text-xl" : ""}`}
-                        >
-                            {processing ? "Menyimpan..." : "Simpan Pengeluaran"}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+        <div className="mt-4 flex flex-wrap justify-center gap-1">
+            {links.map((link, index) => (
+                <Link
+                    key={index}
+                    href={link.url ?? "#"}
+                    dangerouslySetInnerHTML={{ __html: link.label }}
+                    preserveScroll
+                    className={`rounded-md px-3 py-1 ${
+                        large ? "min-h-11 text-lg" : "text-sm"
+                    } ${
+                        link.active
+                            ? "bg-primary text-primary-foreground"
+                            : "text-slate-500 hover:bg-slate-100"
+                    } ${!link.url ? "pointer-events-none opacity-40" : ""}`}
+                />
+            ))}
+        </div>
     );
 }
+
+/* ---------- Daftar transaksi per hari (dipakai lansia & remaja) ---------- */
+
+function TransactionList({
+    rows,
+    links,
+    large = false,
+    title,
+    subtitle,
+    action,
+}) {
+    const groups = groupByDay(rows);
+
+    return (
+        <div className="mx-auto w-full max-w-3xl space-y-5 sm:space-y-6">
+            {/* header */}
+            <div
+                className={`flex gap-3 ${
+                    large
+                        ? "flex-col sm:flex-row sm:items-start sm:justify-between"
+                        : "items-start justify-between"
+                }`}
+            >
+                <div className="min-w-0">
+                    <h1
+                        className={`font-heading text-slate-900 ${
+                            large ? "text-4xl" : "text-3xl"
+                        }`}
+                    >
+                        {title}
+                    </h1>
+                    <p
+                        className={`mt-1 text-slate-600 ${
+                            large ? "text-lg" : "text-base"
+                        }`}
+                    >
+                        {subtitle}
+                    </p>
+                </div>
+
+                {action}
+            </div>
+
+            {/* daftar per hari */}
+            {groups.length === 0 ? (
+                <section className="flex flex-col items-center rounded-bl-3xl rounded-br-3xl rounded-tl-3xl rounded-tr-[3rem] bg-emerald-50 px-6 py-12 text-center ring-1 ring-emerald-900/15">
+                    <span
+                        className={`flex items-center justify-center rounded-full bg-emerald-100 text-emerald-800 ${
+                            large ? "h-16 w-16" : "h-14 w-14"
+                        }`}
+                    >
+                        <Receipt className={large ? "h-8 w-8" : "h-7 w-7"} />
+                    </span>
+                    <p
+                        className={`mt-4 font-heading text-slate-900 ${
+                            large ? "text-3xl" : "text-2xl"
+                        }`}
+                    >
+                        Belum ada transaksi
+                    </p>
+                    <p
+                        className={`mt-1 text-slate-600 ${
+                            large ? "text-lg" : "text-base"
+                        }`}
+                    >
+                        {large
+                            ? "Transaksi Anda akan muncul di sini."
+                            : "Catat jajan pertamamu, nanti muncul di sini."}
+                    </p>
+                </section>
+            ) : (
+                groups.map((group) => (
+                    <section key={group.label}>
+                        <h2
+                            className={`mb-2 px-2 font-semibold text-slate-600 ${
+                                large ? "text-lg" : "text-base"
+                            }`}
+                        >
+                            {group.label}
+                        </h2>
+
+                        <ul className="divide-y divide-emerald-900/10 overflow-hidden rounded-3xl bg-white ring-1 ring-emerald-900/15">
+                            {group.items.map((trx) => {
+                                const meta = TYPE_META[trx.type] ?? {
+                                    label: trx.type,
+                                    sign: "",
+                                };
+                                const income = meta.sign === "+";
+                                const status = STATUS_META[trx.status] ?? {
+                                    label: trx.status,
+                                    className: "bg-slate-100 text-slate-600",
+                                };
+                                const rejected = trx.status === "rejected";
+                                const pending = trx.status === "pending";
+
+                                const Icon = income
+                                    ? trx.type === "allowance"
+                                        ? Wallet
+                                        : ArrowDownLeft
+                                    : (CATEGORY_ICON[trx.category] ?? Package);
+
+                                const itemTitle =
+                                    trx.description ||
+                                    (CATEGORY_OPTIONS.find(
+                                        (c) => c.value === trx.category,
+                                    )?.label ??
+                                        meta.label);
+
+                                return (
+                                    <li
+                                        key={trx.id}
+                                        className={`flex items-start gap-3 px-4 sm:px-5 ${
+                                            large ? "py-5" : "py-4"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`flex shrink-0 items-center justify-center rounded-full ${
+                                                large
+                                                    ? "h-14 w-14"
+                                                    : "h-11 w-11"
+                                            } ${
+                                                income
+                                                    ? "bg-emerald-100 text-emerald-800"
+                                                    : "bg-slate-100 text-slate-700"
+                                            }`}
+                                        >
+                                            <Icon
+                                                className={
+                                                    large
+                                                        ? "h-7 w-7"
+                                                        : "h-5 w-5"
+                                                }
+                                            />
+                                        </span>
+
+                                        <div className="min-w-0 flex-1">
+                                            <p
+                                                className={`truncate font-semibold capitalize text-slate-900 ${
+                                                    large
+                                                        ? "text-xl"
+                                                        : "text-base"
+                                                }`}
+                                            >
+                                                {itemTitle}
+                                            </p>
+                                            <p
+                                                className={`mt-0.5 text-slate-600 ${
+                                                    large
+                                                        ? "text-base"
+                                                        : "text-sm"
+                                                }`}
+                                            >
+                                                {meta.label} •{" "}
+                                                {timeLabel(trx.created_at)}
+                                            </p>
+
+                                            {pending && (
+                                                <p
+                                                    className={`mt-1 font-medium text-amber-800 ${
+                                                        large
+                                                            ? "text-base"
+                                                            : "text-sm"
+                                                    }`}
+                                                >
+                                                    Menunggu persetujuan orang
+                                                    tua
+                                                </p>
+                                            )}
+
+                                            {rejected && (
+                                                <p
+                                                    className={`mt-1 font-medium text-rose-700 ${
+                                                        large
+                                                            ? "text-base"
+                                                            : "text-sm"
+                                                    }`}
+                                                >
+                                                    Ditolak orang tua, saldo
+                                                    tidak terpotong
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="shrink-0 text-right">
+                                            <p
+                                                className={`font-bold tabular-nums ${
+                                                    large
+                                                        ? "text-xl"
+                                                        : "text-base"
+                                                } ${
+                                                    rejected
+                                                        ? "text-slate-400 line-through"
+                                                        : pending
+                                                          ? "text-amber-800"
+                                                          : income
+                                                            ? "text-emerald-700"
+                                                            : "text-slate-900"
+                                                }`}
+                                            >
+                                                {meta.sign}
+                                                {formatRupiah(trx.amount)}
+                                            </p>
+                                            <span
+                                                className={`mt-1 inline-block rounded-full font-semibold ${
+                                                    large
+                                                        ? "px-3 py-1 text-sm"
+                                                        : "px-2.5 py-0.5 text-xs"
+                                                } ${status.className}`}
+                                            >
+                                                {status.label}
+                                            </span>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </section>
+                ))
+            )}
+
+            <Pagination links={links} large={large} />
+        </div>
+    );
+}
+
+/* ---------- Tampilan LANSIA ---------- */
+
+function LansiaTransactions({ rows, links }) {
+    return (
+        <TransactionList
+            rows={rows}
+            links={links}
+            large
+            title="Riwayat transaksi"
+            subtitle="Semua uang masuk dan keluar Anda."
+            action={
+                <Link
+                    href={route("lansia.spend")}
+                    className="inline-flex h-14 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-emerald-800 px-6 text-lg font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 active:scale-[0.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400 sm:w-auto"
+                >
+                    <ShoppingBag className="h-6 w-6" />
+                    Catat belanja
+                </Link>
+            }
+        />
+    );
+}
+
+/* ---------- Tampilan REMAJA ---------- */
+
+function RemajaTransactions({ rows, links }) {
+    return (
+        <TransactionList
+            rows={rows}
+            links={links}
+            title="Riwayat transaksi"
+            subtitle="Semua uang masuk dan jajanmu."
+            action={
+                <Link
+                    href={route("remaja.spend")}
+                    className="inline-flex h-12 shrink-0 cursor-pointer items-center gap-2 rounded-full bg-emerald-800 px-5 text-base font-semibold text-white transition-colors duration-200 hover:bg-emerald-700 active:scale-[0.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400"
+                >
+                    <Plus className="h-5 w-5" />
+                    Jajan
+                </Link>
+            }
+        />
+    );
+}
+
+/* ---------- Halaman transaksi ---------- */
 
 export default function Transactions({ transactions }) {
     const { auth } = usePage().props;
     const isLansia = auth.user.role === "lansia";
+
     const rows = transactions?.data ?? [];
     const links = transactions?.links ?? [];
 
@@ -241,115 +429,20 @@ export default function Transactions({ transactions }) {
         <>
             <Head title="Transaksi" />
 
-            <div className={`mb-6 flex items-center justify-between ${isLansia ? "flex-wrap gap-4" : ""}`}>
-                <div>
-                    <h1 className={`font-bold text-slate-800 ${isLansia ? "text-4xl" : "text-2xl"}`}>
-                        Transaksi
-                    </h1>
-                    <p className={`text-slate-500 ${isLansia ? "mt-1 text-xl" : "text-sm"}`}>
-                        Riwayat lengkap transaksi kamu.
-                    </p>
-                </div>
-                <NewExpenseDialog isLansia={isLansia} />
-            </div>
-
-            <Card className={isLansia ? "border-4 border-emerald-100" : ""}>
-                <CardHeader>
-                    <CardTitle
-                        className={`font-medium text-slate-500 ${isLansia ? "text-xl" : "text-sm"}`}
-                    >
-                        Riwayat Transaksi
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {rows.length ? (
-                        <div className="divide-y">
-                            {rows.map((trx) => {
-                                const meta = TYPE_META[trx.type] ?? {
-                                    sign: "",
-                                };
-                                return (
-                                    <div
-                                        key={trx.id}
-                                        className={`flex items-center justify-between ${isLansia ? "py-5" : "py-3"}`}
-                                    >
-                                        <div>
-                                            <div className="mb-1 flex flex-wrap items-center gap-2">
-                                                <p
-                                                    className={`font-medium text-slate-700 ${isLansia ? "text-xl" : "text-sm"}`}
-                                                >
-                                                    {trx.description ||
-                                                        (CATEGORY_OPTIONS.find(
-                                                            (c) =>
-                                                                c.value ===
-                                                                trx.category,
-                                                        )?.label ??
-                                                            trx.category)}
-                                                </p>
-                                                <TypeBadge type={trx.type} isLansia={isLansia} />
-                                            </div>
-                                            <p
-                                                className={`text-slate-400 ${isLansia ? "text-base" : "text-xs"}`}
-                                            >
-                                                {new Date(
-                                                    trx.created_at,
-                                                ).toLocaleString("id-ID")}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p
-                                                className={`font-semibold ${
-                                                    isLansia ? "text-2xl" : "text-sm"
-                                                } ${
-                                                    meta.sign === "+"
-                                                        ? "text-green-600"
-                                                        : "text-slate-800"
-                                                }`}
-                                            >
-                                                {meta.sign}
-                                                {formatRupiah(trx.amount)}
-                                            </p>
-                                            <StatusBadge status={trx.status} isLansia={isLansia} />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <p
-                            className={`py-8 text-center text-slate-400 ${isLansia ? "text-xl" : "text-sm"}`}
-                        >
-                            Belum ada transaksi.
-                        </p>
-                    )}
-
-                    {links.length > 3 && (
-                        <div className="mt-4 flex flex-wrap justify-center gap-1">
-                            {links.map((link, index) => (
-                                <Link
-                                    key={index}
-                                    href={link.url ?? "#"}
-                                    dangerouslySetInnerHTML={{
-                                        __html: link.label,
-                                    }}
-                                    preserveScroll
-                                    className={`rounded-md px-3 py-1 ${isLansia ? "text-lg" : "text-sm"} ${
-                                        link.active
-                                            ? "bg-primary text-primary-foreground"
-                                            : "text-slate-500 hover:bg-slate-100"
-                                    } ${!link.url ? "pointer-events-none opacity-40" : ""}`}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+            {isLansia ? (
+                <LansiaTransactions rows={rows} links={links} />
+            ) : (
+                <RemajaTransactions rows={rows} links={links} />
+            )}
         </>
     );
 }
 
+/* ---------- Pilih layout berdasarkan role ---------- */
+
 Transactions.layout = (page) => {
     const role = page.props.auth.user.role;
     const Layout = role === "lansia" ? LansiaLayout : RemajaLayout;
+
     return <Layout>{page}</Layout>;
 };

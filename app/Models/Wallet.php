@@ -80,7 +80,7 @@ class Wallet extends Model
     }
 
     /** Reset akumulasi harian/bulanan jika sudah lewat periodenya */
-    protected function resetCountersIfNeeded(): void
+    public function resetCountersIfNeeded(): void
     {
         $today = now()->toDateString();
         $thisMonth = now()->startOfMonth()->toDateString();

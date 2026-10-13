@@ -31,42 +31,64 @@ class WalletController extends Controller
         MidtransConfig::$is3ds = config('midtrans.is_3ds');
     }
 
-   public function topUpForm(Request $request): Response
-{
-    $user = Auth::user();
-    $family = $user->family()->withCount('members')->first();
+    public function topUpForm(Request $request): Response
+    {
+        /** @var User $user */
+        $user = Auth::user();
 
-    $recipient = null;
-    if ($request->filled('recipient_id')) {
-        $recipient = User::where('id', $request->recipient_id)
-            ->where('family_id', $family->id)
-            ->whereIn('role', ['lansia', 'remaja'])
-            ->with('wallet')
-            ->first();
+        abort_unless(
+            ! $user->isDeceased(),
+            403,
+            'Akun ini tidak dapat memulai top-up baru.'
+        );
+
+        $family = $user->family()->withCount('members')->first();
+
+        abort_unless($family, 422, 'Keluarga tidak ditemukan.');
+
+        $recipient = null;
+        if ($request->filled('recipient_id')) {
+            $recipient = User::where('id', $request->recipient_id)
+                ->where('life_status', '!=', 'deceased')
+                ->where('family_id', $family->id)
+                ->whereIn('role', ['lansia', 'remaja'])
+                ->with('wallet')
+                ->first();
+        }
+
+        return Inertia::render('OrangTua/TopUpLimit', [
+            'family' => $family,
+            'recipient' => $recipient ? [
+                'id' => $recipient->id,
+                'name' => $recipient->name,
+                'wallet_balance' => $recipient->wallet?->balance ?? 0,
+            ] : null,
+            'midtransClientKey' => config('midtrans.client_key'),
+            'midtransIsProduction' => config('midtrans.is_production'),
+        ]);
     }
-
-    return Inertia::render('OrangTua/TopUpLimit', [
-        'family' => $family,
-        'recipient' => $recipient ? [
-            'id' => $recipient->id,
-            'name' => $recipient->name,
-            'wallet_balance' => $recipient->wallet?->balance ?? 0,
-        ] : null,
-        'midtransClientKey' => config('midtrans.client_key'),
-        'midtransIsProduction' => config('midtrans.is_production'),
-    ]);
-}
 
     public function topUp(TopUpRequest $request): JsonResponse
     {
+        /** @var User $actor */
         $actor = $request->user();
+
+        abort_unless(
+            ! $actor->isDeceased(),
+            403,
+            'Akun ini tidak dapat memulai top-up baru.'
+        );
+
         $family = $actor->family;
+
+        abort_unless($family, 422, 'Keluarga tidak ditemukan.');
 
 
         $recipient = null;
         if ($request->filled('recipient_id')) {
             $recipient = User::where('id', $request->recipient_id)
                 ->where('family_id', $family->id)
+                ->where('life_status', '!=', 'deceased')
                 ->whereIn('role', ['lansia', 'remaja'])
                 ->firstOrFail();
         }
@@ -209,40 +231,40 @@ class WalletController extends Controller
      * biar gak dobel kode dan konsisten aturannya di satu tempat.
      */
     protected function applyMidtransStatus(Transaction $transaction, ?string $transactionStatus, ?string $fraudStatus): void
-{
-    if ($transaction->status !== 'pending') {
-        return;
+    {
+        if ($transaction->status !== 'pending') {
+            return;
+        }
+
+        $isSuccess = in_array($transactionStatus, ['capture', 'settlement'])
+            && ($fraudStatus === null || $fraudStatus === 'accept');
+
+        $isFailed = in_array($transactionStatus, ['deny', 'cancel', 'expire']);
+
+        if ($isSuccess) {
+            DB::transaction(function () use ($transaction) {
+                $recipient = $transaction->user;
+
+                // Kalau si "pemilik" transaksi ini lansia/remaja -> masuk wallet pribadinya.
+                // Kalau orang_tua -> masuk pool keluarga (perilaku lama, tetap jalan).
+                if ($recipient && in_array($recipient->role, ['lansia', 'remaja'])) {
+                    $recipient->wallet()->increment('balance', (float) $transaction->amount);
+                } else {
+                    $family = Family::find($transaction->family_id);
+                    $family->topUp((float) $transaction->amount);
+                }
+
+                $transaction->update(['status' => 'completed']);
+
+                ActivityLog::record('top_up', $transaction->user, $transaction->family, [
+                    'amount' => $transaction->amount,
+                    'midtrans_order_id' => $transaction->midtrans_order_id,
+                ]);
+            });
+        } elseif ($isFailed) {
+            $transaction->update(['status' => 'rejected']);
+        }
     }
-
-    $isSuccess = in_array($transactionStatus, ['capture', 'settlement'])
-        && ($fraudStatus === null || $fraudStatus === 'accept');
-
-    $isFailed = in_array($transactionStatus, ['deny', 'cancel', 'expire']);
-
-    if ($isSuccess) {
-        DB::transaction(function () use ($transaction) {
-            $recipient = $transaction->user;
-
-            // Kalau si "pemilik" transaksi ini lansia/remaja -> masuk wallet pribadinya.
-            // Kalau orang_tua -> masuk pool keluarga (perilaku lama, tetap jalan).
-            if ($recipient && in_array($recipient->role, ['lansia', 'remaja'])) {
-                $recipient->wallet()->increment('balance', (float) $transaction->amount);
-            } else {
-                $family = Family::find($transaction->family_id);
-                $family->topUp((float) $transaction->amount);
-            }
-
-            $transaction->update(['status' => 'completed']);
-
-            ActivityLog::record('top_up', $transaction->user, $transaction->family, [
-                'amount' => $transaction->amount,
-                'midtrans_order_id' => $transaction->midtrans_order_id,
-            ]);
-        });
-    } elseif ($isFailed) {
-        $transaction->update(['status' => 'rejected']);
-    }
-}
 
     public function edit(User $user): Response
     {
@@ -278,6 +300,13 @@ class WalletController extends Controller
         $request->validate([
             'amount' => ['required', 'numeric', 'min:1'],
         ]);
+        if ($user->isDeceased()) {
+            return back()->withErrors([
+                'amount' =>
+                'Anggota ini sudah ditandai meninggal di Ayom. '
+                    . 'Saldo tidak dapat dialokasikan.',
+            ]);
+        }
 
         $family = $user->family;
         $amount = (float) $request->amount;

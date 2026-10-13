@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\DB;
 class TransactionController extends Controller
 {
     /**
-     * Simpan transaksi belanja (dipakai oleh VoiceCheckout & form belanja manual).
+     * Simpan transaksi belanja (dipakai oleh form belanja lansia dan remaja).
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:1',
-            'category' => 'required|in:makanan,transportasi,hiburan,tagihan,kesehatan,pendidikan,lainnya',
+            'category' => 'required|in:makanan,transportasi,hiburan,tagihan,kesehatan,pendidikan,pakaian,belanja,lainnya',
             'description' => 'nullable|string|max:255',
         ]);
 
@@ -26,6 +26,9 @@ class TransactionController extends Controller
         if (!$wallet) {
             return back()->withErrors(['amount' => 'Dompet Anda belum diatur. Hubungi keluarga Anda.']);
         }
+
+        // Reset hitungan harian/bulanan kalau sudah ganti hari/bulan
+        $wallet->resetCountersIfNeeded();
 
         // Validasi ulang di backend (jangan andalkan frontend saja)
         if ($wallet->daily_limit && ($wallet->daily_spent + $validated['amount']) > $wallet->daily_limit) {
@@ -40,7 +43,7 @@ class TransactionController extends Controller
             return back()->withErrors(['amount' => 'Saldo Anda tidak mencukupi.']);
         }
 
-        $butuhApproval = $validated['amount'] > $wallet->approval_threshold;
+        $butuhApproval = $wallet->requiresApproval((float) $validated['amount']);
 
         $transaction = DB::transaction(function () use ($validated, $user, $wallet, $butuhApproval) {
             $transaction = Transaction::create([
@@ -61,9 +64,7 @@ class TransactionController extends Controller
                 ]);
             } else {
                 // Transaksi kecil (di bawah approval_threshold) langsung dipotong dari saldo
-                $wallet->decrement('balance', $validated['amount']);
-                $wallet->increment('daily_spent', $validated['amount']);
-                $wallet->increment('monthly_spent', $validated['amount']);
+                $wallet->recordSpending((float) $validated['amount']);
             }
 
             return $transaction;

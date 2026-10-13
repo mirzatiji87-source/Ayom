@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
@@ -22,25 +22,16 @@ class User extends Authenticatable
         'role',
         'family_id',
         'created_by',
-        'phone',
         'date_of_birth',
         'is_active',
+        'life_status',
+        'status_changed_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'date_of_birth' => 'date',
-            'is_active' => 'boolean',
-        ];
-    }
 
     // ================= RELATIONS =================
 
@@ -79,6 +70,11 @@ class User extends Authenticatable
         return $this->hasMany(Bill::class);
     }
 
+    public function bpjsProfile(): HasOne
+    {
+        return $this->hasOne(BpjsProfile::class);
+    }
+
     public function tasksAssigned(): HasMany
     {
         return $this->hasMany(Task::class, 'assigned_to');
@@ -104,6 +100,19 @@ class User extends Authenticatable
         return $this->hasMany(ActivityLog::class);
     }
 
+    // ================= CASTS =================
+
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'date_of_birth' => 'date',
+            'is_active' => 'boolean',
+            'status_changed_at' => 'datetime',
+        ];
+    }
+
     // ================= ROLE HELPERS =================
 
     public function isAdmin(): bool
@@ -126,18 +135,36 @@ class User extends Authenticatable
         return $this->role === 'remaja';
     }
 
-    /** Apakah user ini boleh membuat akun lansia/remaja */
+    /**
+     * True jika status meninggal sudah diverifikasi di Ayom.
+     * Akun dan riwayat pengguna tetap dipertahankan.
+     */
+    public function isDeceased(): bool
+    {
+        return $this->life_status === 'deceased';
+    }
+
+    /**
+     * Apakah user boleh membuat akun lansia atau remaja.
+     */
     public function canCreateDependents(): bool
     {
         return $this->isAdmin() || $this->isOrangTua();
     }
 
-    /** Apakah $this adalah guardian (orang tua) dari $member dalam family yang sama */
+    /**
+     * Apakah user ini merupakan orang tua/guardian dari anggota
+     * yang berada dalam keluarga yang sama.
+     */
     public function isGuardianOf(User $member): bool
-{
-    return $this->isOrangTua()
-        && $this->family_id !== null
-        && $this->family_id === $member->family_id
-        && in_array($member->role, ['lansia', 'remaja', 'orang_tua']);
-}
+    {
+        return $this->isOrangTua()
+            && $this->family_id !== null
+            && (int) $this->family_id === (int) $member->family_id
+            && in_array(
+                $member->role,
+                ['lansia', 'remaja', 'orang_tua'],
+                true
+            );
+    }
 }

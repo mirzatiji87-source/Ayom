@@ -45,10 +45,10 @@ const ROLES = [
         title: "Lansia",
         lead: "Dilindungi, tanpa harus rumit.",
         points: [
-            "Navigasi suara Bahasa Indonesia",
-            "Auto-pilot tagihan rutin dan pengingat",
-            "Checkout belanja pakai suara",
+            "Navigasi dan belanja pakai suara Bahasa Indonesia",
+            "Tagihan rutin dan pengingat otomatis",
             "Transaksi besar menunggu persetujuan keluarga",
+            "Minta dihubungi keluarga dengan satu tombol",
         ],
     },
     {
@@ -57,10 +57,10 @@ const ROLES = [
         title: "Orang Tua",
         lead: "Mengawasi dengan transparan.",
         points: [
-            "Guardian View untuk memantau arus kas",
-            "Limit harian dan bulanan tiap anggota",
+            "Guardian View: pantau arus kas tiap anggota",
+            "Limit harian dan bulanan, top-up saldo terpusat",
             "Approval Center untuk transaksi mencurigakan",
-            "Top-up saldo keluarga terpusat",
+            "Profil BPJS dan laporan perubahan status keluarga",
         ],
     },
     {
@@ -69,7 +69,7 @@ const ROLES = [
         title: "Remaja",
         lead: "Belajar mengatur uang sendiri.",
         points: [
-            "Uang saku cair setelah misi selesai",
+            "Uang saku cair setelah misi disetujui orang tua",
             "Pencatatan otomatis per kategori",
             "Grafik pengeluaran yang mudah dibaca",
             "Latihan budgeting tanpa risiko besar",
@@ -717,6 +717,24 @@ export default function Welcome() {
                         {ROLES.map((item) => (
                             <RoleColumn key={item.role} item={item} />
                         ))}
+                    </div>
+                </section>
+
+                {/* LIFE EVENT */}
+                <section className="mx-auto max-w-6xl px-6 pb-24">
+                    <div className="max-w-2xl">
+                        <h2
+                            className="text-3xl tracking-tight sm:text-4xl"
+                            style={{ fontFamily: FONT, fontWeight: 800 }}
+                        >
+                            Saat keluarga berduka, Ayom tetap membantu
+                        </h2>
+                        <p className="mt-3 text-base text-[var(--ayom-muted)]">
+                            Orang tua melaporkan perubahan status anggota, admin
+                            memverifikasi, lalu Ayom menyusun checklist tindak
+                            lanjut: BPJS, tagihan yang perlu dijadwalkan ulang,
+                            dan lainnya. Akun dan riwayat tetap tersimpan.
+                        </p>
                     </div>
                 </section>
 

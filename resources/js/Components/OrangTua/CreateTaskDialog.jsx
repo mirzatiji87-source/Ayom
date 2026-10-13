@@ -83,10 +83,10 @@ export default function CreateTaskDialog({ dependents = [], trigger }) {
             ) : (
                 <DialogTrigger
                     render={
-                        <Button className="w-full bg-[var(--ayom-primary)] text-white shadow-sm hover:bg-[var(--ayom-primary-dark)] sm:w-auto" />
+                        <Button className="h-12 w-full cursor-pointer rounded-full bg-[var(--ayom-primary)] px-6 text-base font-semibold normal-case tracking-normal text-white shadow-sm transition-colors duration-200 hover:bg-[var(--ayom-primary-dark)] active:scale-[0.98] sm:w-auto" />
                     }
                 >
-                    <Plus className="mr-1.5 h-4 w-4" />
+                    <Plus className="mr-2 h-5 w-5" />
                     Buat Misi Baru
                 </DialogTrigger>
             )}

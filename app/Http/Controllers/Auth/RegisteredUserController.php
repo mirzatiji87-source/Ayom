@@ -28,13 +28,29 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'phone' => ['required', 'string', 'regex:/^[0-9+\s-]{8,20}$/'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                'unique:' . User::class,
+            ],
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^[0-9+\s-]{8,20}$/',
+            ],
+            'password' => [
+                'required',
+                'confirmed',
+                Rules\Password::defaults(),
+            ],
         ], [
             'phone.regex' => 'Nomor HP tidak valid. Gunakan angka saja, contoh 081234567890.',
         ]);
 
+        /** @var User $user */
         $user = DB::transaction(function () use ($request) {
             $family = Family::create([
                 'name' => 'Keluarga ' . $request->name,
@@ -49,16 +65,27 @@ class RegisteredUserController extends Controller
                 'family_id' => $family->id,
             ]);
 
-            $family->update(['owner_id' => $user->id]);
+            $family->update([
+                'owner_id' => $user->id,
+            ]);
 
-            Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+            Wallet::create([
+                'user_id' => $user->id,
+                'balance' => 0,
+            ]);
 
             ActivityLog::record('register', $user, $user);
 
             return $user;
         });
 
-        event(new Registered($user));
+        // Kirim email verifikasi. Jika pengiriman gagal,
+        // kesalahan dicatat tanpa membatalkan pendaftaran.
+        try {
+            event(new Registered($user));
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         Auth::login($user);
 

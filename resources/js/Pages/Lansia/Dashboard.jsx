@@ -5,6 +5,7 @@ import { Head, Link, router } from "@inertiajs/react";
 import LansiaLayout from "@/Layouts/LansiaLayout";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
+import { parseBelanja } from "@/lib/voiceParser";
 
 import {
     Mic,
@@ -171,30 +172,84 @@ export default function Dashboard({
             },
         );
     };
+    const bukaQris = () => {
+        const url = safeRoute("lansia.spend");
+
+        if (!url) {
+            ucapkan("Maaf, halaman belanja belum tersedia.");
+            return;
+        }
+
+        ucapkan(
+            "Membuka halaman belanja. Tekan tombol Scan QRIS untuk memindai kode.",
+        );
+        router.get(url, { qris: 1 });
+    };
+
+    const bukaBelanja = ({ amount, category, item }) => {
+        const url = safeRoute("lansia.spend");
+
+        if (!url) {
+            ucapkan("Maaf, halaman belanja belum tersedia.");
+            return;
+        }
+
+        const data = {};
+        if (amount) data.amount = amount;
+        if (category) data.category = category;
+        if (item) data.description = item;
+
+        if (amount) {
+            ucapkan(
+                `${item ? item + ", " : ""}${new Intl.NumberFormat("id-ID").format(amount)} rupiah. Silakan periksa, lalu tekan Catat belanja.`,
+            );
+        } else {
+            ucapkan(
+                "Membuka halaman belanja. Silakan isi harga dan barangnya.",
+            );
+        }
+
+        router.get(url, data);
+    };
 
     const handleCommand = (text) => {
-        if (text.includes("saldo")) {
+        const belanja = parseBelanja(text);
+        let cabang = "tidak dikenali";
+
+        if (text.includes("saldo") && !belanja.amount) {
+            cabang = "saldo";
             ucapkan(`Saldo Anda saat ini ${formatRupiah(wallet?.balance)}.`);
             saldoRef.current?.scrollIntoView({
                 behavior: "smooth",
                 block: "center",
             });
-        } else if (text.includes("tagihan") || text.includes("bayar")) {
+        } else if (text.includes("tagihan")) {
+            cabang = "tagihan";
             buka("lansia.bills.index", "Membuka halaman tagihan Anda.");
         } else if (
             text.includes("riwayat") ||
             text.includes("transaksi") ||
             text.includes("mutasi")
         ) {
+            cabang = "riwayat";
             buka("transactions.index", "Membuka riwayat transaksi Anda.");
-        } else if (text.includes("belanja") || text.includes("checkout")) {
-            buka("lansia.voice-checkout", "Membuka halaman belanja suara.");
+        } else if (
+            /\b(qris|kris|kuris|quris|kiris|cris|qr)\b|scan|pindai|barcode/.test(
+                text,
+            )
+        ) {
+            cabang = "qris";
+            bukaQris();
+        } else if (belanja.intent) {
+            cabang = "belanja";
+            bukaBelanja(belanja);
         } else if (
             text.includes("keluarga") ||
             text.includes("telepon") ||
             text.includes("hubungi") ||
             text.includes("anak")
         ) {
+            cabang = "keluarga";
             if (lansia?.family_phone) {
                 hubungiKeluarga();
             } else {
@@ -202,9 +257,11 @@ export default function Dashboard({
             }
         } else {
             ucapkan(
-                "Maaf, saya tidak mengerti. Coba ucapkan: lihat saldo, bayar tagihan, lihat riwayat, atau hubungi keluarga.",
+                "Maaf, saya tidak mengerti. Coba ucapkan: lihat saldo, bayar tagihan, beli bakso lima puluh ribu, scan QRIS, atau hubungi keluarga.",
             );
         }
+
+        console.log("[voice]", text, "=>", cabang, belanja);
     };
 
     const { startListening, isListening, heard } =
@@ -225,9 +282,9 @@ export default function Dashboard({
         },
         {
             key: "belanja",
-            label: "Belanja Suara",
+            label: "Belanja",
             icon: ShoppingBag,
-            href: safeRoute("lansia.voice-checkout"),
+            href: safeRoute("lansia.spend"),
         },
         ...(lansia?.family_phone
             ? [

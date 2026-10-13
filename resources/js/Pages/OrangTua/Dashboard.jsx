@@ -2,7 +2,6 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 import { motion } from "framer-motion";
 
 import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
-
 import { Badge } from "@/Components/ui/badge";
 
 import {
@@ -18,8 +17,6 @@ import {
 
 import { formatDate, initials } from "@/lib/ayom-theme";
 
-import CreateTaskDialog from "@/Components/OrangTua/CreateTaskDialog";
-
 import {
     Wallet,
     ShieldCheck,
@@ -27,7 +24,6 @@ import {
     TrendingDown,
     Plus,
     ArrowRight,
-    ArrowUpRight,
     PhoneCall,
     Check,
 } from "lucide-react";
@@ -47,6 +43,7 @@ const statusVariant = {
     approved: "default",
     rejected: "destructive",
 };
+
 const waktuRelatif = (value) => {
     if (!value) return "";
 
@@ -100,7 +97,7 @@ function StatCard({ icon: Icon, label, value, hint, action, index }) {
             className="h-full min-w-0"
         >
             <div
-                className={`flex h-full min-w-0 flex-col bg-white p-6 ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:ring-[var(--ayom-primary)] sm:p-7 ${SHAPE_CARD}`}
+                className={`flex h-full min-w-0 flex-col border border-slate-200 bg-white p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--ayom-primary)] sm:p-7 ${SHAPE_CARD}`}
             >
                 <div className="flex min-w-0 items-center gap-4">
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--ayom-primary)] text-white">
@@ -142,47 +139,52 @@ function MemberCard({ member, index }) {
             className="h-full min-w-0"
         >
             <div
-                className={`flex h-full min-w-0 flex-col bg-white p-6 ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:ring-[var(--ayom-primary)] sm:p-7 ${
+                className={`flex h-full min-w-0 flex-col border border-slate-200 bg-white p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--ayom-primary)] sm:p-7 ${
                     index % 2 === 0 ? SHAPE_CARD : SHAPE_CARD_ALT
                 }`}
             >
-                <div className="flex min-w-0 items-start justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--ayom-primary)] text-base font-bold text-white">
-                            {initials(member.name)}
-                        </span>
+                {/* Identitas anggota */}
+                <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--ayom-primary)] text-base font-bold text-white">
+                        {initials(member.name)}
+                    </span>
 
-                        <div className="min-w-0">
-                            <p className="truncate text-lg font-semibold text-slate-900">
-                                {member.name}
-                            </p>
-
-                            <Badge
-                                variant="outline"
-                                className="mt-1 max-w-full rounded-full border-[var(--ayom-primary-line)] bg-[var(--ayom-primary-soft)] text-[var(--ayom-primary)]"
-                            >
-                                {roleLabel[member.role] ?? member.role}
-                            </Badge>
-                        </div>
-                    </div>
-
-                    <div className="min-w-0 shrink-0 text-right">
-                        <p className="break-words text-xl font-extrabold tabular-nums text-slate-900">
-                            {rupiah(wallet?.balance)}
+                    <div className="min-w-0">
+                        <p className="truncate text-lg font-semibold text-slate-900">
+                            {member.name}
                         </p>
 
-                        <Link
-                            href={route("orang-tua.top-up.form", {
-                                recipient_id: member.id,
-                            })}
-                            className="mt-1 inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-[var(--ayom-primary)] transition-opacity duration-200 hover:underline"
+                        <Badge
+                            variant="outline"
+                            className="mt-1 max-w-full rounded-full border-[var(--ayom-primary-line)] bg-[var(--ayom-primary-soft)] text-[var(--ayom-primary)]"
                         >
-                            <Plus className="h-4 w-4 shrink-0" />
-                            Isi saldo
-                        </Link>
+                            {roleLabel[member.role] ?? member.role}
+                        </Badge>
                     </div>
                 </div>
 
+                {/* Saldo dan tombol isi saldo */}
+                <div className="mt-5 flex min-w-0 items-center justify-between gap-3 rounded-2xl bg-[var(--ayom-primary-soft)] px-4 py-3">
+                    <div className="min-w-0">
+                        <p className="text-sm text-slate-600">Saldo</p>
+
+                        <p className="break-words text-xl font-extrabold tabular-nums text-slate-900">
+                            {rupiah(wallet?.balance)}
+                        </p>
+                    </div>
+
+                    <Link
+                        href={route("orang-tua.top-up.form", {
+                            recipient_id: member.id,
+                        })}
+                        className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--ayom-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--ayom-primary-dark)] active:scale-[0.97]"
+                    >
+                        <Plus className="h-4 w-4 shrink-0" />
+                        Isi saldo
+                    </Link>
+                </div>
+
+                {/* Limit wallet */}
                 {wallet ? (
                     <div className="mt-6 min-w-0 space-y-5">
                         <LimitBar
@@ -205,6 +207,7 @@ function MemberCard({ member, index }) {
                     </p>
                 )}
 
+                {/* Aksi anggota */}
                 <div className="mt-auto flex min-w-0 gap-3 pt-7">
                     <Link
                         href={route("orang-tua.guardian-view.show", member.id)}
@@ -229,10 +232,10 @@ function MemberCard({ member, index }) {
 
 export default function Dashboard() {
     const { auth } = usePage().props;
+
     const {
         family,
         members = [],
-        dependents = [],
         pendingApprovals = [],
         pendingApprovalsCount = 0,
         pendingTasksCount = 0,
@@ -297,9 +300,11 @@ export default function Dashboard() {
 
                         <Link
                             href={route("orang-tua.top-up.form")}
-                            className="inline-flex w-fit max-w-full shrink-0 cursor-pointer items-center gap-2 rounded-full bg-white px-6 py-3.5 text-base font-bold text-[var(--ayom-primary)] shadow-sm transition-colors duration-200 hover:bg-white/90 active:scale-[0.97]"
+                            className="inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-lg font-bold text-[var(--ayom-primary)] shadow-lg ring-4 ring-white/25 transition-all duration-200 hover:bg-[var(--ayom-primary-soft)] hover:ring-white/40 active:scale-[0.97] sm:w-auto"
                         >
-                            <ArrowUpRight className="h-5 w-5 shrink-0" />
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--ayom-primary)] text-white">
+                                <Plus className="h-5 w-5" />
+                            </span>
                             Top-up Saldo
                         </Link>
                     </div>
@@ -462,28 +467,14 @@ export default function Dashboard() {
 
                 {/* ANGGOTA KELUARGA */}
                 <section className="min-w-0">
-                    <div className="mb-4 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div className="min-w-0">
-                            <h2 className="font-serif text-2xl text-slate-900 sm:text-3xl">
-                                Anggota Keluarga
-                            </h2>
+                    <div className="mb-4 min-w-0">
+                        <h2 className="font-serif text-2xl text-slate-900 sm:text-3xl">
+                            Anggota Keluarga
+                        </h2>
 
-                            <p className="mt-1 text-sm text-slate-600 sm:text-base">
-                                Pantau saldo dan batas pengeluaran anggota.
-                            </p>
-                        </div>
-
-                        <div className="flex min-w-0 flex-wrap gap-3">
-                            <CreateTaskDialog dependents={dependents} />
-
-                            <Link
-                                href={route("dependents.create")}
-                                className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full bg-[var(--ayom-primary)] px-5 py-2.5 text-base font-semibold text-white transition-colors duration-200 hover:bg-[var(--ayom-primary-dark)] active:scale-[0.97]"
-                            >
-                                <Plus className="h-5 w-5 shrink-0" />
-                                Tambah Akun
-                            </Link>
-                        </div>
+                        <p className="mt-1 text-sm text-slate-600 sm:text-base">
+                            Pantau saldo dan batas pengeluaran anggota.
+                        </p>
                     </div>
 
                     {members.length === 0 ? (

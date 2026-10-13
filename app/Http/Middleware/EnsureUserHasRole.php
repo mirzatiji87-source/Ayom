@@ -20,6 +20,10 @@ class EnsureUserHasRole
             abort(403, 'Akun Anda sudah dinonaktifkan.');
         }
 
+        if ($user->isDeceased()) {
+            abort(403, 'Akun ini tercatat milik anggota yang telah meninggal dunia (laporan terverifikasi di Ayom). Hubungi keluarga atau admin.');
+        }
+
         return $next($request);
     }
 }

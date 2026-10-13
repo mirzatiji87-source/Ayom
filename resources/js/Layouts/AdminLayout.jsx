@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { Head, Link, usePage, router } from "@inertiajs/react";
-import { Button } from "@/Components/ui/button";
+import {
+    ChevronDown,
+    ClipboardList,
+    LayoutDashboard,
+    UserPlus,
+    Users,
+} from "lucide-react";
 import { Separator } from "@/Components/ui/separator";
-import { Sheet, SheetContent, SheetTrigger } from "@/Components/ui/sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,9 +22,7 @@ import { themeVars, initials } from "@/lib/ayom-theme";
 import RolePill from "@/Components/Admin/RolePill";
 
 /**
- * Signature mark for Ayom: two overlapping rounded shapes forming a
- * roof-over-a-shield silhouette — "keluarga yang terlindungi" (family,
- * sheltered). Pure SVG, no external assets, reused as EmptyState icon too.
+ * Logo Ayom. Di-export karena dipakai juga oleh LansiaLayout & RemajaLayout.
  */
 export function AyomMark({ size = 40, className = "" }) {
     return (
@@ -32,122 +35,33 @@ export function AyomMark({ size = 40, className = "" }) {
         />
     );
 }
+
+// label = teks di sidebar desktop, short = teks di bottom nav HP
 const NAV_ITEMS = [
     {
         label: "Dashboard",
+        short: "Dashboard",
         routeName: "admin.dashboard",
-        icon: (active) => (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <rect
-                    x="3"
-                    y="3"
-                    width="8"
-                    height="8"
-                    rx="2"
-                    fill={active ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                />
-                <rect
-                    x="13"
-                    y="3"
-                    width="8"
-                    height="5"
-                    rx="2"
-                    fill={active ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                />
-                <rect
-                    x="13"
-                    y="10"
-                    width="8"
-                    height="11"
-                    rx="2"
-                    fill={active ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                />
-                <rect
-                    x="3"
-                    y="13"
-                    width="8"
-                    height="8"
-                    rx="2"
-                    fill={active ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                />
-            </svg>
-        ),
+        icon: LayoutDashboard,
     },
     {
         label: "Kelola Keluarga",
+        short: "Keluarga",
         routeName: "admin.families.index",
-        icon: (active) => (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle
-                    cx="8"
-                    cy="8"
-                    r="3"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                />
-                <circle
-                    cx="17"
-                    cy="9"
-                    r="2.4"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                />
-                <path
-                    d="M2.5 20c.6-3.6 3-5.6 5.5-5.6s4.9 2 5.5 5.6"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                />
-                <path
-                    d="M13.7 15.2c2 .2 3.7 1.9 4.1 4.8"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                />
-                {active && (
-                    <path
-                        d="M2.5 20c.6-3.6 3-5.6 5.5-5.6s4.9 2 5.5 5.6"
-                        fill="currentColor"
-                        opacity="0.12"
-                    />
-                )}
-            </svg>
-        ),
+        icon: Users,
+    },
+    {
+        label: "Laporan Status",
+        short: "Laporan",
+        routeName: "admin.status-reports.index",
+        icon: ClipboardList,
+        badgeKey: "pendingStatusReportsCount",
     },
     {
         label: "Buat Akun Dependent",
+        short: "Buat Akun",
         routeName: "dependents.create",
-        icon: () => (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle
-                    cx="12"
-                    cy="8"
-                    r="3.4"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                />
-                <path
-                    d="M4.5 20c.9-4.4 3.8-6.8 7.5-6.8s6.6 2.4 7.5 6.8"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                />
-                <path
-                    d="M18.5 5.5v5M16 8h5"
-                    stroke="var(--ayom-accent)"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                />
-            </svg>
-        ),
+        icon: UserPlus,
     },
 ];
 
@@ -159,32 +73,49 @@ function isActiveRoute(name) {
     }
 }
 
-function SidebarNav({ onNavigate }) {
+function usePendingCount() {
+    const { pendingStatusReportsCount = 0 } = usePage().props;
+    return Math.max(0, Number(pendingStatusReportsCount) || 0);
+}
+
+/* ---------- Sidebar (desktop) ---------- */
+
+function SidebarNav() {
+    const pendingCount = usePendingCount();
+
     return (
         <nav className="flex flex-1 flex-col gap-1 px-3">
             {NAV_ITEMS.map((item) => {
                 const active = isActiveRoute(item.routeName);
+                const Icon = item.icon;
+
                 return (
                     <Link
                         key={item.routeName}
                         href={route(item.routeName)}
-                        onClick={onNavigate}
+                        aria-current={active ? "page" : undefined}
                         className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                             active
                                 ? "bg-[var(--ayom-primary)] text-[var(--ayom-primary-foreground)]"
                                 : "text-[var(--ayom-muted)] hover:bg-black/[0.04] hover:text-[var(--ayom-ink)]"
                         }`}
                     >
-                        <span
-                            className={
-                                active
-                                    ? "text-[var(--ayom-primary-foreground)]"
-                                    : "text-[var(--ayom-muted)] group-hover:text-[var(--ayom-ink)]"
-                            }
-                        >
-                            {item.icon(active)}
-                        </span>
-                        {item.label}
+                        <Icon
+                            className="h-[18px] w-[18px] shrink-0"
+                            strokeWidth={1.8}
+                        />
+
+                        <span className="min-w-0 flex-1">{item.label}</span>
+
+                        {item.badgeKey && pendingCount > 0 && (
+                            <span
+                                title={`${pendingCount} laporan menunggu verifikasi`}
+                                aria-label={`${pendingCount} laporan menunggu verifikasi`}
+                                className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-bold leading-none text-white shadow-sm"
+                            >
+                                {pendingCount > 99 ? "99+" : pendingCount}
+                            </span>
+                        )}
                     </Link>
                 );
             })}
@@ -192,7 +123,7 @@ function SidebarNav({ onNavigate }) {
     );
 }
 
-function SidebarBody({ onNavigate }) {
+function SidebarBody() {
     return (
         <div className="flex h-full flex-col py-5">
             <div className="flex items-center gap-2.5 px-4 pb-6">
@@ -206,7 +137,7 @@ function SidebarBody({ onNavigate }) {
                     </p>
                 </div>
             </div>
-            <SidebarNav onNavigate={onNavigate} />
+            <SidebarNav />
             <div className="mt-auto px-4 pt-4">
                 <Separator className="mb-4 bg-[var(--ayom-border)]" />
                 <p className="text-[11px] leading-relaxed text-[var(--ayom-muted)]">
@@ -216,6 +147,74 @@ function SidebarBody({ onNavigate }) {
         </div>
     );
 }
+
+/* ---------- Navigasi bawah (HP & tablet) ---------- */
+
+function BottomNav() {
+    const pendingCount = usePendingCount();
+
+    return (
+        <nav
+            aria-label="Navigasi utama"
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--ayom-border)] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+            style={{ boxShadow: "0 -4px 16px rgba(15, 23, 42, 0.06)" }}
+        >
+            <div className="mx-auto grid max-w-xl grid-cols-4">
+                {NAV_ITEMS.map((item) => {
+                    const active = isActiveRoute(item.routeName);
+                    const Icon = item.icon;
+                    const showBadge = item.badgeKey && pendingCount > 0;
+
+                    return (
+                        <Link
+                            key={item.routeName}
+                            href={route(item.routeName)}
+                            aria-current={active ? "page" : undefined}
+                            className="relative flex min-h-[3.75rem] cursor-pointer flex-col items-center justify-center gap-1 py-2 transition-transform duration-150 active:scale-95"
+                        >
+                            {active && (
+                                <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--ayom-primary)]" />
+                            )}
+
+                            <span className="relative">
+                                <Icon
+                                    className={`h-6 w-6 ${
+                                        active
+                                            ? "text-[var(--ayom-primary)]"
+                                            : "text-[var(--ayom-muted)]"
+                                    }`}
+                                    strokeWidth={active ? 2.3 : 1.9}
+                                />
+                                {showBadge && (
+                                    <span
+                                        aria-label={`${pendingCount} laporan menunggu verifikasi`}
+                                        className="absolute -right-2.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white"
+                                    >
+                                        {pendingCount > 99
+                                            ? "99+"
+                                            : pendingCount}
+                                    </span>
+                                )}
+                            </span>
+
+                            <span
+                                className={`text-xs font-medium ${
+                                    active
+                                        ? "text-[var(--ayom-primary)]"
+                                        : "text-[var(--ayom-muted)]"
+                                }`}
+                            >
+                                {item.short}
+                            </span>
+                        </Link>
+                    );
+                })}
+            </div>
+        </nav>
+    );
+}
+
+/* ---------- Banner flash ---------- */
 
 function FlashBanner() {
     const { flash } = usePage().props;
@@ -243,13 +242,14 @@ function FlashBanner() {
                 .map((m) => (
                     <div
                         key={m.key}
+                        role={m.tone === "error" ? "alert" : "status"}
                         className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 text-sm ${
                             m.tone === "success"
                                 ? "border-[var(--ayom-primary)]/20 bg-[var(--ayom-primary)]/[0.06] text-[var(--ayom-primary-dark)]"
                                 : "border-[var(--ayom-danger)]/20 bg-[var(--ayom-danger-soft)] text-[var(--ayom-danger)]"
                         }`}
                     >
-                        <span>{m.text}</span>
+                        <span className="min-w-0 break-words">{m.text}</span>
                         <button
                             type="button"
                             onClick={() =>
@@ -268,6 +268,8 @@ function FlashBanner() {
     );
 }
 
+/* ---------- Layout utama admin ---------- */
+
 export default function AdminLayout({
     children,
     title,
@@ -276,7 +278,6 @@ export default function AdminLayout({
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
-    const [mobileOpen, setMobileOpen] = useState(false);
 
     return (
         <div
@@ -286,62 +287,39 @@ export default function AdminLayout({
             <Head title={title ?? "Admin"} />
 
             <div className="mx-auto flex min-h-screen max-w-[1400px] xl:mx-0 xl:max-w-none">
-                {/* Sidebar — desktop */}
+                {/* Sidebar: desktop saja */}
                 <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-[var(--ayom-border)] bg-[var(--ayom-surface)] lg:block">
                     <SidebarBody />
                 </aside>
 
-                {/* Sidebar — mobile drawer */}
-                <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                    <SheetContent
-                        side="left"
-                        className="w-64 border-[var(--ayom-border)] bg-[var(--ayom-surface)] p-0"
-                    >
-                        <SidebarBody onNavigate={() => setMobileOpen(false)} />
-                    </SheetContent>
-                </Sheet>
-
-                {/* Main column */}
-                <div className="flex min-h-screen flex-1 flex-col">
-                    <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-[var(--ayom-border)] bg-[var(--ayom-surface)]/90 px-5 py-3.5 backdrop-blur">
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="lg:hidden"
-                                onClick={() => setMobileOpen(true)}
-                                aria-label="Buka menu"
-                            >
-                                <svg
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                >
-                                    <path
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
-                            </Button>
-                            <div>
-                                <h1 className="text-[17px] font-semibold leading-tight text-[var(--ayom-ink)]">
+                {/* Kolom utama */}
+                <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+                    <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-[var(--ayom-border)] bg-white px-4 py-3 sm:px-5 sm:py-3.5">
+                        <div className="flex min-w-0 items-center gap-3">
+                            {/* Logo hanya di HP, karena sidebar disembunyikan */}
+                            <AyomMark
+                                size={36}
+                                className="rounded-xl lg:hidden"
+                            />
+                            <div className="min-w-0">
+                                <h1 className="truncate text-[17px] font-semibold leading-tight text-[var(--ayom-ink)]">
                                     {title}
                                 </h1>
                                 {subtitle ? (
-                                    <p className="text-sm text-[var(--ayom-muted)]">
+                                    <p className="hidden truncate text-sm text-[var(--ayom-muted)] sm:block">
                                         {subtitle}
                                     </p>
                                 ) : null}
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                             {actions}
                             <DropdownMenu>
-                                <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 transition-colors hover:bg-black/[0.04] focus:outline-none">
+                                <DropdownMenuTrigger
+                                    aria-label="Buka menu profil"
+                                    className="flex items-center gap-2 rounded-full border border-[var(--ayom-border)] bg-[var(--ayom-surface)] py-1 pl-1 pr-2.5 transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ayom-primary)]"
+                                >
                                     <Avatar className="h-8 w-8">
                                         <AvatarFallback
                                             className="text-xs font-semibold"
@@ -354,9 +332,10 @@ export default function AdminLayout({
                                             {initials(user?.name)}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <span className="hidden text-sm font-medium sm:inline">
+                                    <span className="hidden max-w-[10rem] truncate text-sm font-medium sm:inline">
                                         {user?.name}
                                     </span>
+                                    <ChevronDown className="h-4 w-4 text-[var(--ayom-muted)]" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                     align="end"
@@ -368,7 +347,7 @@ export default function AdminLayout({
                                                 {user?.name}
                                             </span>
 
-                                            <span className="text-xs text-[var(--ayom-muted)]">
+                                            <span className="break-all text-xs text-[var(--ayom-muted)]">
                                                 {user?.email}
                                             </span>
 
@@ -394,7 +373,7 @@ export default function AdminLayout({
                         </div>
                     </header>
 
-                    <main className="flex-1 px-5 py-6 xl:px-8">
+                    <main className="flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-5 sm:px-5 lg:pb-8 lg:pt-6 xl:px-8">
                         <div className="mx-auto w-full max-w-[1800px]">
                             <FlashBanner />
                             {children}
@@ -402,6 +381,9 @@ export default function AdminLayout({
                     </main>
                 </div>
             </div>
+
+            {/* Navigasi bawah HP/tablet */}
+            <BottomNav />
         </div>
     );
 }

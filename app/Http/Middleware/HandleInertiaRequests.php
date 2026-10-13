@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\MemberStatusReport;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\Task;
@@ -48,8 +49,17 @@ class HandleInertiaRequests extends Middleware
                 && $user->role === 'orang_tua'
                 && $user->family_id
                 ? Task::inFamily($user->family_id)
-                    ->submitted()
-                    ->count()
+                ->submitted()
+                ->count()
+                : 0,
+            'pendingStatusReportsCount' => fn() =>
+            $request->user()?->role === 'admin'
+                ? MemberStatusReport::query()
+                ->where(
+                    'verification_status',
+                    MemberStatusReport::STATUS_PENDING
+                )
+                ->count()
                 : 0,
         ];
     }

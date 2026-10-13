@@ -8,11 +8,7 @@ import { Badge } from "@/Components/ui/badge";
 import RolePill from "@/Components/Admin/RolePill";
 import EmptyState from "@/Components/Admin/EmptyState";
 
-import {
-    formatRupiah,
-    formatDateTime,
-    roleMeta,
-} from "@/lib/ayom-theme";
+import { formatRupiah, formatDateTime, roleMeta } from "@/lib/ayom-theme";
 
 import {
     Users,
@@ -25,12 +21,7 @@ import {
     Building2,
 } from "lucide-react";
 
-const ROLE_ORDER = [
-    "admin",
-    "orang_tua",
-    "lansia",
-    "remaja",
-];
+const ROLE_ORDER = ["admin", "orang_tua", "lansia", "remaja"];
 
 function StatTile({ label, value, hint, icon: Icon }) {
     return (
@@ -45,15 +36,12 @@ function StatTile({ label, value, hint, icon: Icon }) {
 
                     {Icon ? (
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--ayom-primary)]/[0.08] text-[var(--ayom-primary)] transition-transform duration-300 group-hover:scale-110">
-                            <Icon
-                                className="h-4 w-4"
-                                strokeWidth={1.75}
-                            />
+                            <Icon className="h-4 w-4" strokeWidth={1.75} />
                         </span>
                     ) : null}
                 </div>
 
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-[var(--ayom-ink)]">
+                <p className="mt-3 break-words text-2xl font-semibold tabular-nums tracking-tight text-[var(--ayom-ink)] sm:text-3xl">
                     {value}
                 </p>
 
@@ -76,11 +64,10 @@ const BAR_COLOR = {
 function RoleDistributionBar({ byRole, total }) {
     if (!total) return null;
 
-    const colorOf = (role) =>
-        BAR_COLOR[role] ?? roleMeta(role).dot;
+    const colorOf = (role) => BAR_COLOR[role] ?? roleMeta(role).dot;
 
     return (
-        <div className="flex h-full w-full flex-col rounded-3xl bg-white/[0.07] p-5 ring-1 ring-white/10 backdrop-blur-md">
+        <div className="flex h-full w-full min-w-0 flex-col rounded-3xl bg-white/[0.07] p-4 ring-1 ring-white/10 backdrop-blur-md sm:p-5">
             {/* HEADER */}
             <div className="flex items-end justify-between">
                 <p className="text-xs font-medium text-white/60">
@@ -120,21 +107,18 @@ function RoleDistributionBar({ byRole, total }) {
             <div className="mt-5 flex flex-1 flex-col gap-2">
                 {ROLE_ORDER.map((role) => {
                     const count = byRole[role] ?? 0;
-                    const pct = Math.round(
-                        (count / total) * 100,
-                    );
+                    const pct = Math.round((count / total) * 100);
 
                     return (
                         <div
                             key={role}
-                            className="flex flex-1 flex-col justify-center rounded-2xl bg-white/[0.06] px-4 py-2.5"
+                            className="flex min-w-0 flex-1 flex-col justify-center rounded-2xl bg-white/[0.06] px-3.5 py-2.5 sm:px-4"
                         >
                             <div className="flex items-center gap-2">
                                 <span
                                     className="h-2 w-2 shrink-0 rounded-full"
                                     style={{
-                                        backgroundColor:
-                                            colorOf(role),
+                                        backgroundColor: colorOf(role),
                                     }}
                                 />
 
@@ -158,8 +142,7 @@ function RoleDistributionBar({ byRole, total }) {
                                     className="h-full rounded-full transition-all duration-500"
                                     style={{
                                         width: `${pct}%`,
-                                        backgroundColor:
-                                            colorOf(role),
+                                        backgroundColor: colorOf(role),
                                     }}
                                 />
                             </div>
@@ -194,7 +177,7 @@ export default function Dashboard({
             {/* HERO + STATISTIK */}
             <div className="space-y-5">
                 {/* HERO */}
-                <Card className="relative overflow-hidden rounded-[2.5rem] border-0 bg-gradient-to-br from-[var(--ayom-primary)] via-[var(--ayom-primary)] to-[var(--ayom-primary-dark,var(--ayom-primary))] text-[var(--ayom-primary-foreground)] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.45)]">
+                <Card className="relative overflow-hidden rounded-[2rem] border-0 sm:rounded-[2.5rem] bg-gradient-to-br from-[var(--ayom-primary)] via-[var(--ayom-primary)] to-[var(--ayom-primary-dark,var(--ayom-primary))] text-[var(--ayom-primary-foreground)] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.45)]">
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_0%_0%,rgba(255,255,255,0.14),transparent_55%)]" />
 
                     <div className="pointer-events-none absolute -right-10 -top-14 opacity-[0.07]">
@@ -205,9 +188,9 @@ export default function Dashboard({
 
                     <div className="pointer-events-none absolute -bottom-16 -left-12 h-40 w-40 rounded-full border border-white/10" />
 
-                    <CardContent className="relative grid gap-5 p-7 sm:p-9 lg:grid-cols-12 lg:items-stretch">
+                    <CardContent className="relative grid gap-5 p-5 sm:p-9 lg:grid-cols-12 lg:items-stretch">
                         {/* KIRI: SALDO */}
-                        <div className="flex flex-col justify-between gap-8 lg:col-span-7">
+                        <div className="flex min-w-0 flex-col justify-between gap-6 sm:gap-8 lg:col-span-7">
                             <div>
                                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/85 ring-1 ring-white/10 backdrop-blur">
                                     <WalletCards className="h-3.5 w-3.5" />
@@ -218,22 +201,19 @@ export default function Dashboard({
                                     Total saldo keluarga se-platform
                                 </p>
 
-                                <p className="mt-2 break-words text-5xl font-semibold tabular-nums tracking-tight sm:text-6xl">
-                                    {formatRupiah(
-                                        s.total_balance,
-                                    )}
+                                <p className="mt-2 break-words text-[clamp(1.5rem,7vw,3rem)] font-semibold tabular-nums tracking-tight lg:text-4xl xl:text-5xl 2xl:text-6xl">
+                                    {formatRupiah(s.total_balance)}
                                 </p>
 
                                 <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/60">
-                                    Akumulasi saldo dari seluruh
-                                    keluarga terdaftar, termasuk
-                                    yang belum pernah melakukan
-                                    top-up.
+                                    Akumulasi saldo dari seluruh keluarga
+                                    terdaftar, termasuk yang belum pernah
+                                    melakukan top-up.
                                 </p>
                             </div>
 
                             {/* MINI METRIK */}
-                            <div className="grid grid-cols-3 divide-x divide-white/10 rounded-3xl bg-white/[0.07] ring-1 ring-white/10 backdrop-blur-md">
+                            <div className="grid grid-cols-1 divide-y divide-white/10 rounded-3xl bg-white/[0.07] ring-1 ring-white/10 backdrop-blur-md sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                                 {[
                                     {
                                         label: "Rata-rata / keluarga",
@@ -257,13 +237,13 @@ export default function Dashboard({
                                 ].map((m) => (
                                     <div
                                         key={m.label}
-                                        className="min-w-0 px-5 py-4"
+                                        className="flex min-w-0 items-center justify-between gap-3 px-4 py-3 sm:block sm:px-5 sm:py-4"
                                     >
-                                        <p className="truncate text-[11px] font-medium text-white/50">
+                                        <p className="shrink-0 text-[11px] font-medium text-white/50 sm:truncate">
                                             {m.label}
                                         </p>
 
-                                        <p className="mt-1 truncate text-lg font-semibold tabular-nums text-white">
+                                        <p className="truncate text-base font-semibold tabular-nums text-white sm:mt-1 sm:text-lg">
                                             {m.value}
                                         </p>
                                     </div>
@@ -282,7 +262,7 @@ export default function Dashboard({
                 </Card>
 
                 {/* STATISTIK */}
-                <div className="grid grid-cols-2 gap-5 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
                     <StatTile
                         icon={Building2}
                         label="Total Keluarga"
@@ -340,9 +320,7 @@ export default function Dashboard({
                             </div>
 
                             <Link
-                                href={route(
-                                    "admin.families.index",
-                                )}
+                                href={route("admin.families.index")}
                                 className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--ayom-primary)] transition-colors hover:bg-[var(--ayom-primary)]/[0.07]"
                             >
                                 Lihat semua
@@ -359,54 +337,47 @@ export default function Dashboard({
                             </div>
                         ) : (
                             <ul className="divide-y divide-[var(--ayom-border)]">
-                                {recentFamilies.map(
-                                    (family) => (
-                                        <li key={family.id}>
-                                            <Link
-                                                href={route(
-                                                    "admin.families.show",
-                                                    family.id,
-                                                )}
-                                                className="group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-black/[0.02]"
-                                            >
-                                                <div className="flex min-w-0 items-center gap-3">
-                                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--ayom-primary)]/[0.06] text-[var(--ayom-primary)]">
-                                                        <Building2 className="h-4 w-4" />
-                                                    </span>
+                                {recentFamilies.map((family) => (
+                                    <li key={family.id}>
+                                        <Link
+                                            href={route(
+                                                "admin.families.show",
+                                                family.id,
+                                            )}
+                                            className="group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-black/[0.02]"
+                                        >
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--ayom-primary)]/[0.06] text-[var(--ayom-primary)]">
+                                                    <Building2 className="h-4 w-4" />
+                                                </span>
 
-                                                    <div className="min-w-0">
-                                                        <p className="truncate text-sm font-semibold text-[var(--ayom-ink)]">
-                                                            {family.name}
-                                                        </p>
-
-                                                        <p className="mt-0.5 truncate text-xs text-[var(--ayom-muted)]">
-                                                            Pemilik:{" "}
-                                                            {family
-                                                                .owner
-                                                                ?.name ??
-                                                                "—"}{" "}
-                                                            ·{" "}
-                                                            {
-                                                                family.members_count
-                                                            }{" "}
-                                                            anggota
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex shrink-0 items-center gap-2">
-                                                    <p className="text-sm font-bold tabular-nums text-[var(--ayom-ink)]">
-                                                        {formatRupiah(
-                                                            family.balance,
-                                                        )}
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-semibold text-[var(--ayom-ink)]">
+                                                        {family.name}
                                                     </p>
 
-                                                    <ArrowUpRight className="hidden h-4 w-4 text-[var(--ayom-muted)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 sm:block" />
+                                                    <p className="mt-0.5 truncate text-xs text-[var(--ayom-muted)]">
+                                                        Pemilik:{" "}
+                                                        {family.owner?.name ??
+                                                            "—"}{" "}
+                                                        · {family.members_count}{" "}
+                                                        anggota
+                                                    </p>
                                                 </div>
-                                            </Link>
-                                        </li>
-                                    ),
-                                )}
+                                            </div>
+
+                                            <div className="flex shrink-0 items-center gap-2">
+                                                <p className="text-sm font-bold tabular-nums text-[var(--ayom-ink)]">
+                                                    {formatRupiah(
+                                                        family.balance,
+                                                    )}
+                                                </p>
+
+                                                <ArrowUpRight className="hidden h-4 w-4 text-[var(--ayom-muted)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 sm:block" />
+                                            </div>
+                                        </Link>
+                                    </li>
+                                ))}
                             </ul>
                         )}
                     </CardContent>
@@ -440,53 +411,41 @@ export default function Dashboard({
                             </div>
                         ) : (
                             <ul className="max-h-[420px] overflow-y-auto px-5 py-5">
-                                {recentActivity.map(
-                                    (log, idx) => (
-                                        <li
-                                            key={log.id}
-                                            className="relative flex gap-3 pb-5 last:pb-0"
-                                        >
-                                            {idx !==
-                                                recentActivity.length -
-                                                    1 && (
-                                                <span className="absolute left-[7px] top-4 h-full w-px bg-[var(--ayom-border)]" />
-                                            )}
+                                {recentActivity.map((log, idx) => (
+                                    <li
+                                        key={log.id}
+                                        className="relative flex gap-3 pb-5 last:pb-0"
+                                    >
+                                        {idx !== recentActivity.length - 1 && (
+                                            <span className="absolute left-[7px] top-4 h-full w-px bg-[var(--ayom-border)]" />
+                                        )}
 
-                                            <span
-                                                className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-[var(--ayom-surface)] shadow-sm"
-                                                style={{
-                                                    backgroundColor:
-                                                        roleMeta(
-                                                            log
-                                                                .user
-                                                                ?.role,
-                                                        ).dot,
-                                                }}
-                                            />
+                                        <span
+                                            className="relative mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-[var(--ayom-surface)] shadow-sm"
+                                            style={{
+                                                backgroundColor: roleMeta(
+                                                    log.user?.role,
+                                                ).dot,
+                                            }}
+                                        />
 
-                                            <div className="min-w-0">
-                                                <p className="text-sm leading-relaxed text-[var(--ayom-ink)]">
-                                                    <span className="font-semibold">
-                                                        {log
-                                                            .user
-                                                            ?.name ??
-                                                            "Sistem"}
-                                                    </span>{" "}
-                                                    <span className="text-[var(--ayom-muted)]">
-                                                        {log.action_label ??
-                                                            log.action}
-                                                    </span>
-                                                </p>
+                                        <div className="min-w-0">
+                                            <p className="text-sm leading-relaxed text-[var(--ayom-ink)]">
+                                                <span className="font-semibold">
+                                                    {log.user?.name ?? "Sistem"}
+                                                </span>{" "}
+                                                <span className="text-[var(--ayom-muted)]">
+                                                    {log.action_label ??
+                                                        log.action}
+                                                </span>
+                                            </p>
 
-                                                <p className="mt-1 text-xs text-[var(--ayom-muted)]">
-                                                    {formatDateTime(
-                                                        log.created_at,
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </li>
-                                    ),
-                                )}
+                                            <p className="mt-1 text-xs text-[var(--ayom-muted)]">
+                                                {formatDateTime(log.created_at)}
+                                            </p>
+                                        </div>
+                                    </li>
+                                ))}
                             </ul>
                         )}
                     </CardContent>

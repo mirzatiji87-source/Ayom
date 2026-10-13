@@ -11,8 +11,11 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    public const MODE_SIMULATION = 'simulation';
+
     protected $fillable = [
         'midtrans_order_id',
+        'payment_mode',
         'user_id',
         'family_id',
         'bill_id',

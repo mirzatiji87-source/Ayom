@@ -1,5 +1,4 @@
 // resources/js/Layouts/LansiaLayout.jsx
-import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -9,16 +8,16 @@ import {
     ReceiptText,
     History,
     ChevronDown,
-    Menu,
-    X,
+    ShoppingBag,
 } from "lucide-react";
 import { AyomMark } from "@/Layouts/AdminLayout";
 import { useRoleTheme } from "@/lib/ayom-theme";
 
 const NAV_ITEMS = [
     { label: "Beranda", routeName: "lansia.dashboard", icon: Home },
+    { label: "Belanja", routeName: "lansia.spend", icon: ShoppingBag },
     {
-        label: "Tagihan Saya",
+        label: "Tagihan",
         routeName: "lansia.bills.index",
         icon: ReceiptText,
     },
@@ -40,7 +39,8 @@ function getInitials(name = "") {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/** Menu profil desktop: avatar → dropdown berisi info singkat + tombol keluar */
+/* ---------- Menu profil: badge inisial + dropdown (HP & desktop) ---------- */
+
 function ProfileMenu({ user }) {
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
@@ -65,8 +65,9 @@ function ProfileMenu({ user }) {
     const name = user?.name ?? "Pengguna";
 
     return (
-        <div className="relative hidden lg:block" ref={menuRef}>
+        <div className="relative" ref={menuRef}>
             <motion.button
+                type="button"
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setOpen((v) => !v)}
                 aria-haspopup="true"
@@ -81,9 +82,11 @@ function ProfileMenu({ user }) {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white shadow-inner">
                     {getInitials(name)}
                 </span>
-                <span className="max-w-[8rem] truncate text-base font-semibold text-slate-800">
+
+                <span className="hidden max-w-[8rem] truncate text-base font-semibold text-slate-800 sm:inline">
                     {name.split(" ")[0]}
                 </span>
+
                 <ChevronDown
                     className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
                         open ? "rotate-180" : ""
@@ -125,7 +128,8 @@ function ProfileMenu({ user }) {
                                 href={route("logout")}
                                 method="post"
                                 as="button"
-                                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base font-semibold text-rose-600 transition-colors duration-150 hover:bg-rose-50"
+                                onClick={() => setOpen(false)}
+                                className="flex w-full items-center gap-3 rounded-xl px-3 py-3.5 text-left text-base font-semibold text-rose-600 transition-colors duration-150 hover:bg-rose-50"
                             >
                                 <LogOut className="h-5 w-5" />
                                 Keluar
@@ -138,138 +142,66 @@ function ProfileMenu({ user }) {
     );
 }
 
-/** Menu hamburger untuk HP: tombol di header → drawer slide-in dari kanan
- *  berisi navigasi + profil + tombol keluar. */
-function MobileMenu({ user }) {
-    const [open, setOpen] = useState(false);
-    const name = user?.name ?? "Pengguna";
+/* ---------- Navigasi bawah HP/tablet (tap target besar untuk lansia) ---------- */
 
-    // Kunci scroll body saat drawer terbuka, tutup otomatis dengan tombol Escape
-    useEffect(() => {
-        if (open) {
-            document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "";
-        }
-        function handleEscape(e) {
-            if (e.key === "Escape") setOpen(false);
-        }
-        document.addEventListener("keydown", handleEscape);
-        return () => {
-            document.body.style.overflow = "";
-            document.removeEventListener("keydown", handleEscape);
-        };
-    }, [open]);
-
+function BottomNav() {
     return (
-        <div className="lg:hidden">
-            <motion.button
-                whileTap={{ scale: 0.94 }}
-                onClick={() => setOpen(true)}
-                aria-haspopup="true"
-                aria-expanded={open}
-                aria-label="Buka menu"
-                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-emerald-100 bg-white text-emerald-700 shadow-sm transition-colors duration-200 hover:border-emerald-200 hover:bg-emerald-50/60"
-            >
-                <Menu className="h-6 w-6" />
-            </motion.button>
+        <nav
+            aria-label="Navigasi utama"
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-emerald-100 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden"
+            style={{ boxShadow: "0 -4px 16px rgba(15, 23, 42, 0.06)" }}
+        >
+            <div className="mx-auto grid max-w-xl grid-cols-4">
+                {NAV_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActiveRoute(item.routeName);
 
-            {createPortal(
-                <AnimatePresence>
-                    {open && (
-                        <>
-                            {/* Overlay gelap */}
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                onClick={() => setOpen(false)}
-                                className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[2px]"
+                    return (
+                        <Link
+                            key={item.routeName}
+                            href={route(item.routeName)}
+                            aria-current={active ? "page" : undefined}
+                            className="relative flex min-h-[4.5rem] cursor-pointer flex-col items-center justify-center gap-1 py-2.5 transition-transform duration-150 active:scale-95"
+                        >
+                            {active && (
+                                <motion.span
+                                    layoutId="lansia-bottom-active"
+                                    transition={{
+                                        type: "spring",
+                                        stiffness: 420,
+                                        damping: 30,
+                                    }}
+                                    className="absolute inset-x-4 top-0 h-1 rounded-full bg-emerald-700"
+                                />
+                            )}
+
+                            <Icon
+                                className={`h-7 w-7 transition-colors duration-150 ${
+                                    active
+                                        ? "text-emerald-800"
+                                        : "text-slate-500"
+                                }`}
+                                strokeWidth={active ? 2.4 : 2}
                             />
 
-                            {/* Drawer */}
-                            <motion.div
-                                initial={{ x: "100%" }}
-                                animate={{ x: 0 }}
-                                exit={{ x: "100%" }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 320,
-                                    damping: 34,
-                                }}
-                                className="fixed inset-y-0 right-0 z-50 flex w-[85%] max-w-sm flex-col bg-white shadow-2xl"
+                            <span
+                                className={`text-sm font-semibold transition-colors duration-150 ${
+                                    active
+                                        ? "text-emerald-800"
+                                        : "text-slate-600"
+                                }`}
                             >
-                                {/* Header drawer: profil + tombol tutup */}
-                                <div className="flex items-center gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 pb-5 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
-                                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-base font-bold text-white shadow-inner">
-                                        {getInitials(name)}
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-lg font-bold text-slate-900">
-                                            {name}
-                                        </p>
-                                        {user?.email && (
-                                            <p className="truncate text-sm text-slate-500">
-                                                {user.email}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <button
-                                        onClick={() => setOpen(false)}
-                                        aria-label="Tutup menu"
-                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors duration-150 hover:bg-white hover:text-slate-700"
-                                    >
-                                        <X className="h-6 w-6" />
-                                    </button>
-                                </div>
-
-                                {/* Daftar navigasi */}
-                                <nav className="flex-1 overflow-y-auto px-3 py-4">
-                                    {NAV_ITEMS.map((item) => {
-                                        const Icon = item.icon;
-                                        const active = isActiveRoute(
-                                            item.routeName,
-                                        );
-                                        return (
-                                            <Link
-                                                key={item.routeName}
-                                                href={route(item.routeName)}
-                                                onClick={() => setOpen(false)}
-                                                className={`mb-1.5 flex items-center gap-3 rounded-2xl px-4 py-3.5 text-lg font-semibold transition-colors duration-150 ${
-                                                    active
-                                                        ? "bg-emerald-600 text-white shadow-sm shadow-emerald-300"
-                                                        : "text-slate-700 hover:bg-emerald-50"
-                                                }`}
-                                            >
-                                                <Icon className="h-6 w-6" />
-                                                {item.label}
-                                            </Link>
-                                        );
-                                    })}
-                                </nav>
-
-                                {/* Tombol keluar */}
-                                <div className="border-t border-emerald-100 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-                                    <Link
-                                        href={route("logout")}
-                                        method="post"
-                                        as="button"
-                                        className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left text-lg font-semibold text-rose-600 transition-colors duration-150 hover:bg-rose-50"
-                                    >
-                                        <LogOut className="h-6 w-6" />
-                                        Keluar
-                                    </Link>
-                                </div>
-                            </motion.div>
-                        </>
-                    )}
-                </AnimatePresence>,
-                document.body,
-            )}
-        </div>
+                                {item.label}
+                            </span>
+                        </Link>
+                    );
+                })}
+            </div>
+        </nav>
     );
 }
+
+/* ---------- Layout utama lansia ---------- */
 
 export default function LansiaLayout({ children, user }) {
     useRoleTheme("lansia");
@@ -297,8 +229,11 @@ export default function LansiaLayout({ children, user }) {
                         </span>
                     </motion.div>
 
-                    {/* Nav horizontal — pill dengan indikator aktif yang meluncur (layoutId), desktop saja */}
-                    <nav className="hidden items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50/60 p-1 lg:flex">
+                    {/* Nav horizontal (desktop saja) */}
+                    <nav
+                        aria-label="Navigasi utama"
+                        className="hidden items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50/60 p-1 lg:flex"
+                    >
                         {NAV_ITEMS.map((item) => {
                             const Icon = item.icon;
                             const active = isActiveRoute(item.routeName);
@@ -306,6 +241,7 @@ export default function LansiaLayout({ children, user }) {
                                 <Link
                                     key={item.routeName}
                                     href={route(item.routeName)}
+                                    aria-current={active ? "page" : undefined}
                                     className="relative flex items-center gap-2 rounded-full px-4 py-2.5 text-base font-semibold"
                                 >
                                     {active && (
@@ -334,17 +270,17 @@ export default function LansiaLayout({ children, user }) {
                         })}
                     </nav>
 
-                    {/* Profil desktop (dropdown) & hamburger mobile (drawer) */}
-                    <div className="flex items-center gap-2">
-                        <ProfileMenu user={resolvedUser} />
-                        <MobileMenu user={resolvedUser} />
-                    </div>
+                    {/* Profil: tampil di HP dan desktop */}
+                    <ProfileMenu user={resolvedUser} />
                 </div>
             </header>
 
-            <main className="mx-auto max-w-xl px-4 py-6 lg:max-w-6xl lg:px-8">
+            <main className="mx-auto max-w-xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] pt-6 lg:max-w-6xl lg:px-8 lg:pb-8">
                 {children}
             </main>
+
+            {/* Navigasi bawah HP/tablet */}
+            <BottomNav />
         </div>
     );
 }

@@ -272,9 +272,13 @@ export function LimitBar({
                 </span>
             </div>
 
-            <Progress
-                value={pct}
-                className={`h-2.5 rounded-full [&>div]:rounded-full ${
+            <div
+                role="progressbar"
+                aria-label={label}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(pct)}
+                className={`h-2.5 w-full overflow-hidden rounded-full ${
                     isOver ? "bg-rose-100" : "bg-slate-100"
                 } ${
                     isOver
@@ -283,7 +287,12 @@ export function LimitBar({
                           ? "[&>div]:bg-amber-500"
                           : barClassName
                 }`}
-            />
+            >
+                <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
 
             {isOver && (
                 <p className="mt-1.5 text-sm font-medium text-rose-700">

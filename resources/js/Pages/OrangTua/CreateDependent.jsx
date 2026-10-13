@@ -1,4 +1,3 @@
-
 // resources/js/Pages/OrangTua/CreateDependent.jsx
 
 import { useEffect, useState } from "react";
@@ -11,6 +10,7 @@ import OrangTuaLayout from "@/Layouts/OrangTuaLayout";
 import { Input } from "@/Components/ui/input";
 import { DatePicker } from "@/Components/ui/date-picker";
 import CurrencyInput from "@/Components/ui/currency-input";
+
 import {
     Select,
     SelectContent,
@@ -18,6 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/Components/ui/select";
+
 import {
     Field,
     SHAPE_CARD,
@@ -81,7 +82,14 @@ export default function CreateDependent({ families = [] }) {
 
     const [successName, setSuccessName] = useState(null);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        reset,
+    } = useForm({
         name: "",
         email: "",
         password: "",
@@ -95,9 +103,6 @@ export default function CreateDependent({ families = [] }) {
         approval_threshold: "",
     });
 
-    // Kalau backend ngirim flash.success dan itu untuk pembuatan akun
-    // (bukan aksi lain), tetap dijaga di sini sebagai fallback,
-    // tapi jalur utama pakai onSuccess di bawah.
     useEffect(() => {
         if (flash?.success && flash?.createdName) {
             setSuccessName(flash.createdName);
@@ -184,9 +189,11 @@ export default function CreateDependent({ families = [] }) {
                                     <SelectItem value="orang_tua">
                                         Orang Tua
                                     </SelectItem>
+
                                     <SelectItem value="remaja">
                                         Remaja
                                     </SelectItem>
+
                                     <SelectItem value="lansia">
                                         Lansia
                                     </SelectItem>
@@ -370,6 +377,7 @@ export default function CreateDependent({ families = [] }) {
                                     label="Ambang Approval"
                                     htmlFor="approval_threshold"
                                     error={errors.approval_threshold}
+                                    hint="Transaksi di atas nominal ini menunggu persetujuanmu dan kamu akan mendapat notifikasi."
                                 >
                                     <CurrencyInput
                                         id="approval_threshold"
@@ -412,4 +420,3 @@ CreateDependent.layout = (page) => {
         </Layout>
     );
 };
-
